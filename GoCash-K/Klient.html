@@ -40,13 +40,16 @@
                       background:linear-gradient(135deg,#22c55e,#16a34a);
                       display:flex; align-items:center; justify-content:center; font-size:15px; }
   .header-logo-text span { color:#22c55e; }
-  .header-user { font-size:12px; color:var(--muted); text-align:right; display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+  .header-user { font-size:12px; color:var(--muted); text-align:right; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
   .header-user b { display:block; font-size:13px; color:var(--text); font-weight:600; }
   .header-user a { color:var(--muted); text-decoration:none; }
   .header-user a:hover { color:var(--red); }
   .refresh-btn { background:#fff; border:1px solid var(--border); border-radius:8px; padding:6px 10px;
-                 cursor:pointer; font-size:13px; font-family:inherit; }
+                 cursor:pointer; font-size:13px; font-family:inherit; position: relative; }
   .refresh-btn:hover { background:#f8fafc; }
+  .refresh-btn .dot { position:absolute; top:-4px; right:-4px; min-width:16px; height:16px;
+                      border-radius:8px; background:var(--red); color:#fff; font-size:10px; font-weight:700;
+                      display:flex; align-items:center; justify-content:center; padding:0 4px; }
 
   .admin-tag { display:inline-block; background:#fef3c7; color:#92400e; font-size:10px; font-weight:700;
                padding:2px 6px; border-radius:4px; margin-left:4px; }
@@ -78,9 +81,23 @@
 
   .section-title { font-size:15px; font-weight:600; margin:24px 0 12px; }
 
+  .notif { background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:8px;
+           border-left:4px solid var(--green); font-size:13px; box-shadow:0 1px 2px rgba(20,30,50,.04);
+           display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .notif.rejected { border-left-color: var(--red); }
+  .notif .when { color: var(--muted); font-size: 11px; margin-top: 4px; display: block; }
+  .notif-close { background: transparent; border: none; color: var(--muted); cursor: pointer;
+                 font-size: 18px; line-height: 1; padding: 0 4px; }
+  .notif-close:hover { color: var(--text); }
+
   .suggestion { background:#fff; border-radius:12px; padding:14px 16px; margin-bottom:8px;
                 border:1px solid var(--border); font-size:14px; line-height:1.45; box-shadow:0 1px 2px rgba(20,30,50,.04); }
   .suggestion-meta { font-size:11px; color:var(--muted); margin-top:8px; }
+
+  .info-article { background:#fff; border-radius:12px; padding:14px 16px; margin-bottom:10px;
+                  border:1px solid var(--border); }
+  .info-article h4 { font-size:14px; font-weight:600; margin-bottom:8px; }
+  .info-article p { font-size:13px; color:var(--muted); white-space:pre-wrap; line-height:1.5; }
 
   .hist-item { display:flex; justify-content:space-between; padding:12px 14px; background:#fff;
                border-radius:10px; margin-bottom:6px; border:1px solid var(--border); font-size:13px; }
@@ -152,6 +169,41 @@
   .admin-list-item.otp { border-color:#fcd34d; background:#fffbeb; }
   .admin-list-item.kmd { border-color:#93c5fd; background:#eff6ff; }
   .admin-list-item.none { border-color:var(--border); background:#f8fafc; color:var(--muted); }
+
+  /* Нижняя навигация на мобиле */
+  .mobile-nav { display: none; }
+  @media (max-width:768px) {
+    body { padding-bottom: 68px; }
+    .mobile-nav {
+      display: flex;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      z-index: 50;
+      box-shadow: 0 -2px 10px rgba(20,30,50,.06);
+      padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+      overflow-x: auto;
+    }
+    .mobile-nav::-webkit-scrollbar { display: none; }
+    .mobile-nav-btn {
+      flex: 1 0 auto; min-width: 62px;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      background: transparent; border: none; color: var(--muted);
+      padding: 6px 4px; font-size: 10px; font-weight: 500;
+      font-family: inherit; cursor: pointer;
+      border-radius: 8px; transition: all .15s;
+      position: relative;
+    }
+    .mobile-nav-btn.active { color: var(--primary); background: rgba(59,130,246,.08); }
+    .mobile-nav-btn .icon { font-size: 20px; line-height: 1; }
+    .mobile-nav-btn .dot {
+      position: absolute; top: 4px; right: 14px;
+      min-width: 16px; height: 16px; border-radius: 8px; background: var(--red);
+      color: #fff; font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 4px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -181,8 +233,9 @@
         <b id="user-fio">—</b>
         <span id="admin-tag" class="admin-tag" style="display:none;">АДМИН</span>
       </div>
-      <button class="refresh-btn" id="btn-refresh" title="Обновить">🔄</button>
-      <button class="admin-btn" id="btn-admin" style="display:none;">Админ</button>
+      <button class="refresh-btn" id="btn-refresh" title="Обновить и уведомления">
+        🔔<span class="dot" id="notif-dot" style="display:none;">0</span>
+      </button>
       <a href="#" id="btn-logout">Выйти</a>
     </div>
   </div>
@@ -198,6 +251,9 @@
   <button class="btn btn-orange" id="btn-bought">🛒 Я купил</button>
   <button class="btn btn-gray" id="btn-expenses">📋 Посмотреть расходы</button>
   <button class="btn btn-gray" id="btn-suggest">💡 Предложить</button>
+
+  <div class="section-title">Мои уведомления</div>
+  <div id="my-notifications"><div class="loader">Загрузка…</div></div>
 
   <div class="section-title">Моя история</div>
   <div id="my-history"><div class="loader">Загрузка…</div></div>
@@ -215,11 +271,9 @@
       <b>Панель администратора</b>
     </div>
   </div>
-
   <div class="section-title" style="margin-top:0;">Сдали</div>
   <select id="paid-month-select" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:12px;font-family:inherit;font-size:14px;"></select>
   <div id="paid-list"></div>
-
   <div class="section-title">Не сдали</div>
   <select id="unpaid-month-select" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:12px;font-family:inherit;font-size:14px;"></select>
   <div id="unpaid-list"></div>
@@ -251,12 +305,6 @@
   <div class="modal">
     <h3>Причина пропуска</h3>
     <label>Выберите месяц</label>
-    <div class="legend-months">
-      <span><span class="legend-dot paid"></span> Оплачено</span>
-      <span><span class="legend-dot otp"></span> Отпуск</span>
-      <span><span class="legend-dot kmd"></span> Командировка</span>
-      <span><span class="legend-dot free"></span> Можно выбрать</span>
-    </div>
     <div class="month-grid" id="skip-months"></div>
     <label>Причина</label>
     <select id="skip-reason">
@@ -272,12 +320,12 @@
   <div class="modal">
     <h3>🛒 Я купил</h3>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
-      Заявка уйдёт администратору на проверку. После одобрения появится в расходах.
+      Заявка уйдёт администратору на проверку.
     </p>
-    <label>Дата (ставится автоматически)</label>
+    <label>Дата (автоматически)</label>
     <input type="date" id="bought-date" disabled>
     <label>Что куплено</label>
-    <input type="text" id="bought-name" placeholder="Например, вода для кулера">
+    <input type="text" id="bought-name">
     <label>Цена (₽)</label>
     <input type="number" id="bought-price" min="0" step="10" value="0">
     <label>Чек (обязательно)</label>
@@ -305,7 +353,7 @@
   <div class="modal">
     <h3>Предложить</h3>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
-      Ваше предложение будет отправлено администратору. В общем списке оно отображается анонимно.
+      Ваше предложение уйдёт администратору анонимно.
     </p>
     <label>Ваше предложение</label>
     <textarea id="suggest-text" placeholder="Напишите вашу идею..."></textarea>
@@ -313,6 +361,43 @@
     <button class="btn btn-gray" data-close-modal>Отмена</button>
   </div>
 </div>
+
+<div class="modal-overlay" id="modal-info-list">
+  <div class="modal" style="max-width:520px;">
+    <h3>ℹ️ Информация</h3>
+    <div id="info-list-client" style="max-height:60vh;overflow-y:auto;"><div class="loader">Загрузка…</div></div>
+    <button class="btn btn-gray" data-close-modal style="margin-top:14px;">Закрыть</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-receipt-view">
+  <div class="modal" style="max-width:800px;">
+    <h3>Чек</h3>
+    <img id="client-receipt-img" style="width:100%;border-radius:8px;">
+    <div class="modal-actions" style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+      <button class="btn btn-gray" data-close-modal>Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- МОБИЛЬНАЯ НИЖНЯЯ НАВИГАЦИЯ -->
+<nav class="mobile-nav" id="mobile-nav">
+  <button class="mobile-nav-btn" data-action="pay">
+    <span class="icon">✅</span>Сдал
+  </button>
+  <button class="mobile-nav-btn" data-action="skip">
+    <span class="icon">❌</span>Не сдаю
+  </button>
+  <button class="mobile-nav-btn" data-action="bought">
+    <span class="icon">🛒</span>Купил
+  </button>
+  <button class="mobile-nav-btn" data-action="expenses">
+    <span class="icon">📋</span>Расходы
+  </button>
+  <button class="mobile-nav-btn" data-action="info">
+    <span class="icon">ℹ️</span>Инфо
+  </button>
+</nav>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -323,7 +408,6 @@
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNteWJqZnJ2YWJjdW1rb2xzeG1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMjEwNDUsImV4cCI6MjEwNDg5NzA0NX0.rj5ld_t0mRXIar9TAnq4yW5TSLxZGR0kdSLaROFkhYo';
 
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
   const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
   const MONTHS_SHORT = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
 
@@ -332,8 +416,8 @@
   let selectedMonth = null;
   let myMonths = Array(12).fill(null);
   let pendingBoughtReceipt = null;
+  let notifications = [];
 
-  // ===== Утилиты =====
   function getSaratovNow() {
     const fmt = new Intl.DateTimeFormat('ru-RU', {
       timeZone:'Europe/Saratov', year:'numeric', month:'numeric', day:'numeric'
@@ -342,49 +426,23 @@
     return { year:+o.year, month:+o.month-1, day:+o.day };
   }
   function isCurrentMonthBillable() { return getSaratovNow().day >= 15; }
-
-  // ВАЖНО: приводим id к числу
   function uid() {
     if (!currentUser) return null;
     const n = Number(currentUser.id);
     return isNaN(n) ? currentUser.id : n;
   }
 
-  function effectiveMyStatus(mIdx) {
-    const s = myMonths[mIdx];
-    if (s) return s;
-    const now = getSaratovNow();
-    if (mIdx < now.month) return 'unpaid';
-    if (mIdx === now.month && isCurrentMonthBillable()) return 'unpaid';
-    return null;
-  }
-
-  // ===== Загрузка моих статусов =====
+  // ===== Загрузка месяцев =====
   async function loadMyMonths() {
     const year = getSaratovNow().year;
-    const userId = uid();
-
-    console.log('🔵 loadMyMonths: user_id =', userId, '(', typeof userId, '), year =', year);
-
-    const res = await db.from('months').select('*').eq('user_id', userId).eq('year', year);
-
-    if (res.error) {
-      console.error('❌ Ошибка загрузки месяцев:', res.error);
-      myMonths = Array(12).fill(null);
-      return;
-    }
-
-    console.log('✅ Получены месяцы:', res.data);
-
+    const res = await db.from('months').select('*').eq('user_id', uid()).eq('year', year);
     myMonths = Array(12).fill(null);
-    (res.data || []).forEach(function(row){
+    if (res.data) res.data.forEach(function(row){
       if (row.month >= 0 && row.month <= 11) myMonths[row.month] = row.status;
     });
-
-    console.log('📅 myMonths после обработки:', myMonths);
   }
 
-  // ===== Вход =====
+  // ===== ВХОД + обновление last_login =====
   document.getElementById('btn-login').addEventListener('click', async function(){
     const fio = document.getElementById('auth-name').value.trim();
     const code = document.getElementById('auth-code').value.trim();
@@ -392,30 +450,26 @@
     errEl.textContent = '';
     if (!fio || !code) { errEl.textContent = 'Заполните все поля'; return; }
 
-    // 1. Админ?
     const adminRes = await db.from('admins').select('*').eq('fio', fio).eq('code', code).maybeSingle();
     if (adminRes.data) {
       currentUser = adminRes.data;
       isAdmin = true;
     } else {
-      // 2. Обычный пользователь
       const res = await db.from('users').select('*').eq('fio', fio).eq('code', code).maybeSingle();
       if (res.error || !res.data) {
         errEl.textContent = 'Неверное имя или код доступа';
-        console.error(res.error);
         return;
       }
       currentUser = res.data;
       isAdmin = false;
+      // Обновляем last_login для обычного пользователя
+      await db.from('users').update({ last_login: new Date().toISOString() }).eq('id', currentUser.id);
     }
-
-    console.log('👤 Вошёл:', currentUser.fio, 'id =', currentUser.id, '(', typeof currentUser.id, ')');
 
     try { sessionStorage.setItem('gocash_user', JSON.stringify({ user: currentUser, isAdmin: isAdmin })); } catch(e){}
     await loadMain();
   });
 
-  // Авто-вход
   (async function(){
     let saved = null;
     try { saved = sessionStorage.getItem('gocash_user'); } catch(e){}
@@ -435,9 +489,8 @@
     document.getElementById('admin-screen').style.display = 'none';
     document.getElementById('user-fio').textContent = currentUser.fio;
     document.getElementById('admin-tag').style.display = isAdmin ? 'inline-block' : 'none';
-    document.getElementById('btn-admin').style.display = isAdmin ? 'inline-block' : 'none';
 
-    await Promise.all([loadMyMonths(), loadBalance(), loadSuggestions()]);
+    await Promise.all([loadMyMonths(), loadBalance(), loadSuggestions(), loadNotifications()]);
     await loadMyHistory();
   }
 
@@ -456,6 +509,41 @@
     document.getElementById('balance-sub').textContent =
       'Сдано: ' + income.toLocaleString('ru-RU') + ' ₽ · Расходы: ' + spent.toLocaleString('ru-RU') + ' ₽';
   }
+
+  // ===== Уведомления =====
+  async function loadNotifications() {
+    const box = document.getElementById('my-notifications');
+    const res = await db.from('notifications').select('*').eq('user_id', uid())
+      .order('created_at', { ascending: false }).limit(20);
+    notifications = res.data || [];
+    renderNotifications();
+  }
+
+  function renderNotifications() {
+    const box = document.getElementById('my-notifications');
+    const unread = notifications.filter(function(n){ return !n.read; }).length;
+    const dot = document.getElementById('notif-dot');
+    if (unread > 0) { dot.textContent = unread; dot.style.display = 'flex'; }
+    else dot.style.display = 'none';
+
+    if (!notifications.length) { box.innerHTML = '<div class="empty">Уведомлений нет</div>'; return; }
+    box.innerHTML = notifications.map(function(n){
+      const cls = n.type === 'payment_rejected' || n.type === 'expense_rejected' ? 'rejected' : '';
+      return '<div class="notif ' + cls + '">' +
+        '<div><b>' + escapeHtml(n.message) + '</b>' +
+        '<span class="when">' + new Date(n.created_at).toLocaleString('ru-RU') + '</span></div>' +
+        '<button class="notif-close" data-dismiss-notif="' + n.id + '" title="Удалить">×</button>' +
+        '</div>';
+    }).join('');
+  }
+
+  document.getElementById('my-notifications').addEventListener('click', async function(e){
+    const btn = e.target.closest('[data-dismiss-notif]');
+    if (!btn) return;
+    await db.from('notifications').delete().eq('id', Number(btn.dataset.dismissNotif));
+    notifications = notifications.filter(function(n){ return n.id !== Number(btn.dataset.dismissNotif); });
+    renderNotifications();
+  });
 
   // ===== Моя история =====
   async function loadMyHistory() {
@@ -511,37 +599,17 @@
     grid.innerHTML = '';
     const now = getSaratovNow();
     selectedMonth = null;
-
-    console.log('🎨 renderMonthSelector:', containerId, 'myMonths =', myMonths);
-
     MONTHS.forEach(function(m, i){
       const b = document.createElement('button');
       b.className = 'month-btn';
       b.textContent = MONTHS_SHORT[i];
-
       const rawStatus = myMonths[i];
       const isFuture = i > now.month;
-
-      if (isFuture) {
-        b.disabled = true;
-        b.title = 'Будущий месяц';
-        grid.appendChild(b); return;
-      }
-      if (rawStatus === 'paid') {
-        b.classList.add('paid-locked'); b.disabled = true; b.title = m + ': оплачено';
-        grid.appendChild(b); return;
-      }
-      if (rawStatus === 'otp') {
-        b.classList.add('otp-locked'); b.disabled = true; b.title = m + ': отпуск';
-        grid.appendChild(b); return;
-      }
-      if (rawStatus === 'kmd') {
-        b.classList.add('kmd-locked'); b.disabled = true; b.title = m + ': командировка';
-        grid.appendChild(b); return;
-      }
-      if (rawStatus === 'unpaid') {
-        b.classList.add('unpaid-locked'); b.title = m + ': отмечено «не сдал»';
-      }
+      if (isFuture) { b.disabled = true; b.title = 'Будущий месяц'; grid.appendChild(b); return; }
+      if (rawStatus === 'paid') { b.classList.add('paid-locked'); b.disabled = true; b.title = m + ': оплачено'; grid.appendChild(b); return; }
+      if (rawStatus === 'otp') { b.classList.add('otp-locked'); b.disabled = true; b.title = m + ': отпуск'; grid.appendChild(b); return; }
+      if (rawStatus === 'kmd') { b.classList.add('kmd-locked'); b.disabled = true; b.title = m + ': командировка'; grid.appendChild(b); return; }
+      if (rawStatus === 'unpaid') { b.classList.add('unpaid-locked'); b.title = m + ': не сдал'; }
       b.addEventListener('click', function(){
         grid.querySelectorAll('.month-btn').forEach(function(x){ x.classList.remove('selected'); });
         b.classList.add('selected');
@@ -612,24 +680,15 @@
     if (selectedMonth === null) { alert('Выберите месяц'); return; }
     const reason = document.getElementById('skip-reason').value;
     const year = getSaratovNow().year;
-
-    // 1. Заявка
     const ins = await db.from('payments').insert({
-      user_id: uid(),
-      year: year,
-      month: selectedMonth,
-      status: 'reason',
-      reason: reason
+      user_id: uid(), year: year, month: selectedMonth, status: 'reason', reason: reason
     });
     if (ins.error) { alert('Ошибка: ' + ins.error.message); return; }
-
-    // 2. Сразу пишем в months
     const up = await db.from('months').upsert(
       { user_id: uid(), year: year, month: selectedMonth, status: reason },
       { onConflict: 'user_id,year,month' }
     );
     if (up.error) { alert('Ошибка месяцы: ' + up.error.message); return; }
-
     await loadMyMonths();
     alert('Причина отправлена ✓');
     document.getElementById('modal-skip').classList.remove('active');
@@ -666,7 +725,6 @@
     if (!name) { alert('Укажите, что куплено'); return; }
     if (price <= 0) { alert('Укажите цену'); return; }
     if (!pendingBoughtReceipt) { alert('Прикрепите чек'); return; }
-
     const btn = this; btn.disabled = true; btn.textContent = 'Отправляем…';
     try {
       const ext = pendingBoughtReceipt.name.split('.').pop();
@@ -675,16 +733,13 @@
       if (up.error) throw up.error;
       const urlData = db.storage.from('expense-receipts').getPublicUrl(path);
       const ins = await db.from('expense_requests').insert({
-        user_id: uid(),
-        name: name,
-        price: price,
+        user_id: uid(), name: name, price: price,
         date: new Date().toISOString().slice(0,10),
         receipt_url: urlData.data.publicUrl,
-        receipt_path: path,
-        status: 'pending'
+        receipt_path: path, status: 'pending'
       });
       if (ins.error) throw ins.error;
-      alert('Заявка отправлена ✓ После одобрения расход появится в общем списке.');
+      alert('Заявка отправлена ✓');
       document.getElementById('modal-bought').classList.remove('active');
       pendingBoughtReceipt = null;
     } catch (err) {
@@ -735,14 +790,14 @@
   document.getElementById('btn-submit-suggest').addEventListener('click', async function(){
     const text = document.getElementById('suggest-text').value.trim();
     if (!text) { alert('Введите текст'); return; }
-    if (text.length > 1000) { alert('Слишком длинное сообщение'); return; }
+    if (text.length > 1000) { alert('Слишком длинное'); return; }
     const res = await db.from('suggestions').insert({
       user_id: uid(), text: text, anonymous: true
     });
     if (res.error) { alert('Ошибка: ' + res.error.message); return; }
     document.getElementById('modal-suggest').classList.remove('active');
     await loadSuggestions();
-    alert('Спасибо! Отправлено ✓');
+    alert('Спасибо! ✓');
   });
 
   async function loadSuggestions() {
@@ -756,19 +811,29 @@
     }).join('');
   }
 
+  // ===== ИНФО (клиент) =====
+  async function openInfo() {
+    const box = document.getElementById('info-list-client');
+    box.innerHTML = '<div class="loader">Загрузка…</div>';
+    const res = await db.from('info_articles').select('*').order('sort_order');
+    if (!res.data || !res.data.length) {
+      box.innerHTML = '<div class="empty">Информации пока нет</div>';
+    } else {
+      box.innerHTML = res.data.map(function(a){
+        return '<div class="info-article">' +
+          '<h4>' + escapeHtml(a.title) + '</h4>' +
+          '<p>' + escapeHtml(a.content) + '</p>' +
+          '</div>';
+      }).join('');
+    }
+    document.getElementById('modal-info-list').classList.add('active');
+  }
+
   // ===== АДМИН-ПАНЕЛЬ =====
-  document.getElementById('btn-admin').addEventListener('click', async function(){
+  async function initAdminPanel() {
     document.getElementById('main-screen').style.display = 'none';
     document.getElementById('admin-screen').style.display = 'block';
-    await initAdminPanel();
-  });
 
-  document.getElementById('btn-admin-back').addEventListener('click', function(){
-    document.getElementById('admin-screen').style.display = 'none';
-    document.getElementById('main-screen').style.display = 'block';
-  });
-
-  async function initAdminPanel() {
     const [usersRes, monthsRes] = await Promise.all([
       db.from('users').select('*').order('fio'),
       db.from('months').select('*').eq('year', getSaratovNow().year)
@@ -816,11 +881,15 @@
       renderList(pm, 'paid', 'paid-list');
       renderList(um, 'unpaid', 'unpaid-list');
     }
-
     document.getElementById('paid-month-select').onchange = refresh;
     document.getElementById('unpaid-month-select').onchange = refresh;
     refresh();
   }
+
+  document.getElementById('btn-admin-back').addEventListener('click', function(){
+    document.getElementById('admin-screen').style.display = 'none';
+    document.getElementById('main-screen').style.display = 'block';
+  });
 
   // ===== ВЫХОД =====
   document.getElementById('btn-logout').addEventListener('click', function(e){
@@ -829,6 +898,7 @@
     try { sessionStorage.removeItem('gocash_user'); } catch(e){}
     currentUser = null; isAdmin = false;
     myMonths = Array(12).fill(null);
+    notifications = [];
     document.getElementById('auth-screen').style.display = 'block';
     document.getElementById('main-screen').style.display = 'none';
     document.getElementById('admin-screen').style.display = 'none';
@@ -836,13 +906,35 @@
     document.getElementById('auth-code').value = '';
   });
 
-  // ===== ОБНОВИТЬ =====
+  // ===== ОБНОВИТЬ (в клиенте) =====
   document.getElementById('btn-refresh').addEventListener('click', async function(){
     const btn = this;
     btn.disabled = true;
     await loadMain();
     btn.disabled = false;
   });
+
+  // ===== МОБИЛЬНАЯ НАВИГАЦИЯ =====
+  document.querySelectorAll('.mobile-nav-btn').forEach(function(b){
+    b.addEventListener('click', async function(){
+      const action = this.dataset.action;
+      document.querySelectorAll('.mobile-nav-btn').forEach(function(x){ x.classList.remove('active'); });
+      this.classList.add('active');
+      if (action === 'pay') document.getElementById('btn-pay').click();
+      if (action === 'skip') document.getElementById('btn-skip').click();
+      if (action === 'bought') document.getElementById('btn-bought').click();
+      if (action === 'expenses') document.getElementById('btn-expenses').click();
+      if (action === 'info') openInfo();
+      setTimeout(function(){
+        document.querySelectorAll('.mobile-nav-btn').forEach(function(x){ x.classList.remove('active'); });
+      }, 300);
+    });
+  });
+
+  // Показываем мобильное меню только когда залогинен
+  function toggleMobileNav(show) {
+    document.getElementById('mobile-nav').style.display = show ? 'flex' : 'none';
+  }
 
   // ===== МОДАЛКИ =====
   document.querySelectorAll('[data-close-modal]').forEach(function(btn){
@@ -861,6 +953,14 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('../service-worker.js').catch(function(){});
   }
+
+  // Показ мобильной навигации при входе
+  const origLoadMain = loadMain;
+  loadMain = async function() {
+    await origLoadMain();
+    toggleMobileNav(!isAdmin);
+  };
+  const origLogout = document.getElementById('btn-logout').onclick;
 })();
 </script>
 </body>
