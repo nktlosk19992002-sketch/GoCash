@@ -180,7 +180,6 @@
   .info-article h4 { font-size:14px; font-weight:600; margin-bottom:6px; }
   .info-article p { font-size:13px; color:var(--muted); white-space:pre-wrap; line-height:1.5; }
 
-  /* ===== Адаптив + мобильная нижняя навигация ===== */
   .mobile-nav { display: none; }
 
   @media (max-width:768px) {
@@ -189,7 +188,7 @@
     .app-header { padding-top:12px; padding-bottom:12px; }
     .months-grid { grid-template-columns:1fr; }
     .home-row-info { min-width:100%; }
-    .app-nav { display:none; } /* скрываем верхнее меню на мобиле */
+    .app-nav { display:none; }
     .mobile-nav {
       display: flex;
       position: fixed;
@@ -203,24 +202,18 @@
     }
     .mobile-nav::-webkit-scrollbar { display: none; }
     .mobile-nav-btn {
-      flex: 1 0 auto;
-      min-width: 62px;
+      flex: 1 0 auto; min-width: 62px;
       display: flex; flex-direction: column; align-items: center; gap: 2px;
-      background: transparent; border: none;
-      color: var(--muted);
-      padding: 6px 4px;
-      font-size: 10px; font-weight: 500;
-      font-family: inherit; cursor: pointer;
-      border-radius: 8px;
-      transition: all .15s;
-      position: relative;
+      background: transparent; border: none; color: var(--muted);
+      padding: 6px 4px; font-size: 10px; font-weight: 500;
+      font-family: inherit; cursor: pointer; border-radius: 8px;
+      transition: all .15s; position: relative;
     }
     .mobile-nav-btn.active { color: var(--primary); background: rgba(59,130,246,.08); }
     .mobile-nav-btn .icon { font-size: 20px; line-height: 1; }
     .mobile-nav-btn .dot {
       position: absolute; top: 4px; right: 14px;
-      min-width: 16px; height: 16px;
-      border-radius: 8px; background: var(--red);
+      min-width: 16px; height: 16px; border-radius: 8px; background: var(--red);
       color: #fff; font-size: 10px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
       padding: 0 4px;
@@ -429,7 +422,7 @@
       <div class="settings-block">
         <h3>Очистка старых чеков</h3>
         <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-          Удаляет фото чеков расходов старше 2 месяцев. Сами расходы остаются.
+          Удаляет фото чеков расходов старше 2 месяцев.
         </p>
         <button class="btn btn-danger" id="btn-clean-receipts">🧹 Очистить чеки расходов (старше 2 мес)</button>
         <p class="settings-hint" id="clean-hint"></p>
@@ -440,8 +433,7 @@
       <div class="settings-block">
         <h3 style="color:var(--red);">⚠️ Опасная зона</h3>
         <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-          Удаляет <b>все чеки оплат</b>, <b>платежи</b>, <b>все предложения</b>, <b>заявки на расход</b>
-          и <b>уведомления</b>. Пользователи, расходы и статусы месяцев <b>останутся</b>.
+          Удаляет <b>все чеки оплат</b>, <b>платежи</b>, <b>предложения</b>, <b>заявки</b>, <b>уведомления</b>.
         </p>
         <button class="btn btn-danger" id="btn-danger-reset">🗑 Удалить историю и заявки</button>
       </div>
@@ -449,27 +441,14 @@
   </section>
 </main>
 
-<!-- МОБИЛЬНАЯ НИЖНЯЯ НАВИГАЦИЯ -->
 <nav class="mobile-nav" id="mobile-nav">
-  <button class="mobile-nav-btn active" data-screen="home">
-    <span class="icon">🏠</span>Главная
-  </button>
-  <button class="mobile-nav-btn" data-screen="expenses">
-    <span class="icon">💸</span>Расходы
-  </button>
-  <button class="mobile-nav-btn" data-screen="users">
-    <span class="icon">👥</span>Люди
-  </button>
-  <button class="mobile-nav-btn" data-screen="receipts">
-    <span class="icon">🧾</span>Чеки
-    <span class="dot" id="mobile-receipts-badge" style="display:none;">0</span>
-  </button>
-  <button class="mobile-nav-btn" data-screen="settings">
-    <span class="icon">⚙️</span>Настр.
-  </button>
+  <button class="mobile-nav-btn active" data-screen="home"><span class="icon">🏠</span>Главная</button>
+  <button class="mobile-nav-btn" data-screen="expenses"><span class="icon">💸</span>Расходы</button>
+  <button class="mobile-nav-btn" data-screen="users"><span class="icon">👥</span>Люди</button>
+  <button class="mobile-nav-btn" data-screen="receipts"><span class="icon">🧾</span>Чеки<span class="dot" id="mobile-receipts-badge" style="display:none;">0</span></button>
+  <button class="mobile-nav-btn" data-screen="settings"><span class="icon">⚙️</span>Настр.</button>
 </nav>
 
-<!-- МОДАЛКИ -->
 <div class="modal-overlay" id="modal-add">
   <div class="modal">
     <h3>Новый пользователь</h3>
@@ -587,7 +566,7 @@
   <div class="modal" style="max-width:420px;">
     <h3>⚠️ Подтверждение</h3>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
-      Введите пароль, чтобы удалить чеки оплат, платежи, заявки на расход, предложения и уведомления.
+      Введите пароль, чтобы удалить всё перечисленное.
     </p>
     <label>Пароль</label>
     <input type="password" id="danger-password" placeholder="Пароль">
@@ -717,7 +696,6 @@
   function calcSpent() { return state.expenses.reduce((s,e) => s + (Number(e.qty)||0)*(Number(e.price)||0), 0); }
   function calcBalance() { return calcIncome() - calcSpent(); }
 
-  // ===== Навигация =====
   const navButtons = document.querySelectorAll('.nav-btn');
   const mobileNavButtons = document.querySelectorAll('.mobile-nav-btn');
   const screens = document.querySelectorAll('.screen');
@@ -744,7 +722,6 @@
   document.querySelectorAll('[data-close-modal]').forEach(b => b.addEventListener('click', function(e){ closeModal(e.target); }));
   document.querySelectorAll('.modal-overlay').forEach(ov => ov.addEventListener('click', function(e){ if (e.target === ov) ov.classList.remove('active'); }));
 
-  // ===== ГЛАВНАЯ =====
   function renderHome() {
     const bal = calcBalance();
     document.getElementById('wallet-balance').textContent = bal.toLocaleString('ru-RU') + ' ₽';
@@ -800,7 +777,6 @@
   document.getElementById('filter-month').addEventListener('change', renderHome);
   document.getElementById('filter-status').addEventListener('change', renderHome);
 
-  // ===== ПОЛЬЗОВАТЕЛИ =====
   function renderUsers() {
     const tbody = document.getElementById('users-tbody');
     tbody.innerHTML = '';
@@ -912,7 +888,7 @@
     closeModal(document.getElementById('btn-delete-user'));
   });
 
-  // ===== ИМПОРТ ИЗ EXCEL =====
+  // ===== ИМПОРТ EXCEL =====
   document.getElementById('btn-import-excel').addEventListener('click', function(){
     importRows = [];
     document.getElementById('excel-file').value = '';
@@ -1074,7 +1050,6 @@
     }
   });
 
-  // ===== РАСХОДЫ =====
   function renderExpenses() {
     const tbody = document.getElementById('expenses-tbody');
     tbody.innerHTML = '';
@@ -1210,7 +1185,6 @@
     openModal('modal-receipt-view');
   }
 
-  // ===== ЧЕКИ ОПЛАТ =====
   function renderReceipts() {
     const tbody = document.getElementById('receipts-tbody');
     tbody.innerHTML = '';
@@ -1238,7 +1212,6 @@
   document.getElementById('receipts-tbody').addEventListener('click', async function(e){
     const view = e.target.closest('[data-view]');
     if (view) { openReceiptView(view.dataset.view); return; }
-
     const ap = e.target.closest('[data-approve]');
     if (ap) {
       const id = Number(ap.dataset.approve);
@@ -1249,7 +1222,6 @@
         { user_id: p.user_id, year: p.year, month: p.month, status: 'paid' },
         { onConflict: 'user_id,year,month' }
       );
-      // Уведомление пользователю
       await db.from('notifications').insert({
         user_id: p.user_id,
         type: 'payment_approved',
@@ -1267,7 +1239,6 @@
       const p = state.payments.find(function(x){ return x.id === id; });
       if (!p) return;
       if (!confirm('Отклонить заявку? Чек будет удалён с сервера.')) return;
-      // Уведомление
       await db.from('notifications').insert({
         user_id: p.user_id,
         type: 'payment_rejected',
@@ -1280,7 +1251,6 @@
     }
   });
 
-  // ===== ЗАЯВКИ НА РАСХОД =====
   function renderRequests() {
     const tbody = document.getElementById('requests-tbody');
     tbody.innerHTML = '';
@@ -1313,7 +1283,7 @@
       const id = Number(ap.dataset.approveReq);
       const r = state.expenseRequests.find(function(x){ return x.id === id; });
       if (!r) return;
-      if (!confirm('Одобрить? Расход будет добавлен в общий список (чек сохранится).')) return;
+      if (!confirm('Одобрить? Расход будет добавлен (чек сохранится).')) return;
       await db.from('expenses').insert({
         date: r.date, name: r.name, qty: 1, price: r.price,
         receipt_url: r.receipt_url, receipt_path: r.receipt_path
@@ -1346,7 +1316,6 @@
     }
   });
 
-  // ===== ПРЕДЛОЖЕНИЯ =====
   function renderSuggestions() {
     const list = document.getElementById('suggestions-list');
     const items = state.suggestions.slice().sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); });
@@ -1360,7 +1329,6 @@
     }).join('');
   }
 
-  // ===== ИНФО (статьи) =====
   function renderInfoArticles() {
     const box = document.getElementById('info-list');
     if (!state.info.length) {
@@ -1422,7 +1390,6 @@
     closeModal(document.getElementById('btn-save-info'));
   });
 
-  // ===== ИСТОРИЯ =====
   function buildHistory() {
     const items = [];
     const year = getSaratovNow().year;
@@ -1497,7 +1464,6 @@
     document.getElementById(id).addEventListener('change', renderHistory);
   });
 
-  // ===== НАСТРОЙКИ =====
   document.getElementById('btn-save-fee').addEventListener('click', async function(){
     const val = Number(document.getElementById('input-fee').value);
     if (!val || val < 0) { alert('Введите корректную сумму'); return; }
@@ -1575,7 +1541,7 @@
   });
 
   document.getElementById('btn-clean-receipts').addEventListener('click', async function(){
-    if (!confirm('Удалить фото чеков расходов старше 2 месяцев? Сами расходы останутся.')) return;
+    if (!confirm('Удалить фото чеков расходов старше 2 месяцев?')) return;
     const hint = document.getElementById('clean-hint');
     hint.textContent = 'Ищем…';
     const threshold = new Date();
@@ -1585,7 +1551,7 @@
       return e.receipt_path && e.date && e.date < thresholdIso;
     });
     if (!old.length) {
-      hint.textContent = 'Нечего удалять — старых чеков нет';
+      hint.textContent = 'Нечего удалять';
       setTimeout(function(){ hint.textContent = ''; }, 3000);
       return;
     }
