@@ -72,11 +72,11 @@
   .filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px; padding:14px 16px;
              background:var(--card); border-radius:var(--radius); border:1px solid var(--border); box-shadow:var(--shadow-sm); }
   .filters label { font-size:12px; color:var(--muted); font-weight:500; }
-  select, input[type="text"], input[type="number"], input[type="date"], input[type="password"] {
+  select, input[type="text"], input[type="number"], input[type="date"], input[type="password"], textarea {
     padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;
     font-family:inherit; background:#fff; color:var(--text); outline:none; transition:border-color .15s;
   }
-  select:focus, input:focus { border-color:var(--primary); }
+  select:focus, input:focus, textarea:focus { border-color:var(--primary); }
 
   table { width:100%; border-collapse:collapse; background:var(--card); border-radius:var(--radius);
           overflow:hidden; box-shadow:var(--shadow-sm); border:1px solid var(--border); }
@@ -115,7 +115,8 @@
            max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(15,23,42,.25); }
   .modal h3 { margin-bottom:16px; font-size:17px; font-weight:600; }
   .modal label { display:block; margin-bottom:6px; font-size:12px; color:var(--muted); font-weight:500; }
-  .modal input, .modal select { width:100%; margin-bottom:14px; padding:10px 12px; }
+  .modal input, .modal select, .modal textarea { width:100%; margin-bottom:14px; padding:10px 12px; }
+  .modal textarea { min-height:120px; resize:vertical; }
   .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; flex-wrap:wrap; }
   .modal-actions .spacer { flex:1; }
 
@@ -145,7 +146,9 @@
   .settings-row { display:flex; gap:10px; flex-wrap:wrap; }
   .settings-hint { margin-top:8px; font-size:12px; color:var(--green); min-height:16px; }
 
-  .receipt-thumb { max-width:70px; max-height:70px; border-radius:6px; cursor:pointer; border:1px solid var(--border); }
+  .receipt-thumb { max-width:70px; max-height:70px; border-radius:6px; cursor:pointer; border:1px solid var(--border);
+                   object-fit: cover; transition: transform .15s; }
+  .receipt-thumb:hover { transform: scale(1.05); }
   .badge-status { display:inline-block; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; }
   .badge-status.pending { background:#fef3c7; color:#92400e; }
   .badge-status.approved { background:#dcfce7; color:#166534; }
@@ -172,10 +175,56 @@
   .admin-row b { font-size:14px; }
   .admin-row small { color:var(--muted); }
 
-  @media (max-width:640px) {
+  .info-article { background:#fff; border:1px solid var(--border); border-radius:10px;
+                  padding:14px 16px; margin-bottom:10px; }
+  .info-article h4 { font-size:14px; font-weight:600; margin-bottom:6px; }
+  .info-article p { font-size:13px; color:var(--muted); white-space:pre-wrap; line-height:1.5; }
+
+  /* ===== Адаптив + мобильная нижняя навигация ===== */
+  .mobile-nav { display: none; }
+
+  @media (max-width:768px) {
+    body { padding-bottom: 68px; }
     .app-main, .app-header, .app-nav { padding-left:16px; padding-right:16px; }
+    .app-header { padding-top:12px; padding-bottom:12px; }
     .months-grid { grid-template-columns:1fr; }
     .home-row-info { min-width:100%; }
+    .app-nav { display:none; } /* скрываем верхнее меню на мобиле */
+    .mobile-nav {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      z-index: 50;
+      box-shadow: 0 -2px 10px rgba(20,30,50,.06);
+      padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+      overflow-x: auto;
+    }
+    .mobile-nav::-webkit-scrollbar { display: none; }
+    .mobile-nav-btn {
+      flex: 1 0 auto;
+      min-width: 62px;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      background: transparent; border: none;
+      color: var(--muted);
+      padding: 6px 4px;
+      font-size: 10px; font-weight: 500;
+      font-family: inherit; cursor: pointer;
+      border-radius: 8px;
+      transition: all .15s;
+      position: relative;
+    }
+    .mobile-nav-btn.active { color: var(--primary); background: rgba(59,130,246,.08); }
+    .mobile-nav-btn .icon { font-size: 20px; line-height: 1; }
+    .mobile-nav-btn .dot {
+      position: absolute; top: 4px; right: 14px;
+      min-width: 16px; height: 16px;
+      border-radius: 8px; background: var(--red);
+      color: #fff; font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 4px;
+    }
   }
 </style>
 </head>
@@ -196,8 +245,9 @@
   <button class="nav-btn" data-screen="expenses">Расходы</button>
   <button class="nav-btn" data-screen="users">Пользователи</button>
   <button class="nav-btn" data-screen="receipts">Чеки<span class="nav-badge" id="receipts-badge" style="display:none;">0</span></button>
-  <button class="nav-btn" data-screen="expense-requests">Заявки на расход</button>
+  <button class="nav-btn" data-screen="expense-requests">Заявки</button>
   <button class="nav-btn" data-screen="suggestions">Предложения</button>
+  <button class="nav-btn" data-screen="info">Инфо</button>
   <button class="nav-btn" data-screen="history">История</button>
   <button class="nav-btn" data-screen="settings">Настройки</button>
 </nav>
@@ -265,7 +315,13 @@
       <button class="btn btn-secondary" id="btn-edit-mode">Редактировать</button>
     </div>
     <table>
-      <thead><tr><th>ФИО</th><th>Код доступа</th><th>Задолженность</th><th style="width:150px;">Инфо</th></tr></thead>
+      <thead><tr>
+        <th>ФИО</th>
+        <th>Код доступа</th>
+        <th style="width:170px;">Последний вход</th>
+        <th>Задолженность</th>
+        <th style="width:150px;">Инфо</th>
+      </tr></thead>
       <tbody id="users-tbody"></tbody>
     </table>
   </section>
@@ -299,6 +355,17 @@
   <section class="screen" id="screen-suggestions">
     <h2>Предложения</h2>
     <div id="suggestions-list"><div class="loader">Загрузка…</div></div>
+  </section>
+
+  <section class="screen" id="screen-info">
+    <h2>Информация</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">
+      Эти статьи увидят пользователи в клиенте — в кнопке «Инфо».
+    </p>
+    <div class="expenses-toolbar">
+      <button class="btn btn-primary" id="btn-add-info">+ Добавить статью</button>
+    </div>
+    <div id="info-list"></div>
   </section>
 
   <section class="screen" id="screen-history">
@@ -339,7 +406,7 @@
       <div class="settings-block">
         <h3>Администраторы</h3>
         <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-          Админы могут заходить в клиентское приложение и видеть кнопку «Админ» с отчётами по сдавшим/не сдавшим.
+          Админы могут заходить в клиентское приложение и видеть кнопку «Админ».
         </p>
         <div class="settings-row" style="margin-bottom:12px;">
           <input type="text" id="new-admin-fio" placeholder="ФИО" style="flex:1;">
@@ -373,8 +440,8 @@
       <div class="settings-block">
         <h3 style="color:var(--red);">⚠️ Опасная зона</h3>
         <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-          Удаляет <b>все чеки оплат</b>, <b>платежи</b>, <b>все предложения</b> и <b>заявки на расход</b>.
-          Пользователи, расходы и статусы месяцев <b>останутся</b>. Действие необратимо.
+          Удаляет <b>все чеки оплат</b>, <b>платежи</b>, <b>все предложения</b>, <b>заявки на расход</b>
+          и <b>уведомления</b>. Пользователи, расходы и статусы месяцев <b>останутся</b>.
         </p>
         <button class="btn btn-danger" id="btn-danger-reset">🗑 Удалить историю и заявки</button>
       </div>
@@ -382,7 +449,27 @@
   </section>
 </main>
 
-<!-- Модалки -->
+<!-- МОБИЛЬНАЯ НИЖНЯЯ НАВИГАЦИЯ -->
+<nav class="mobile-nav" id="mobile-nav">
+  <button class="mobile-nav-btn active" data-screen="home">
+    <span class="icon">🏠</span>Главная
+  </button>
+  <button class="mobile-nav-btn" data-screen="expenses">
+    <span class="icon">💸</span>Расходы
+  </button>
+  <button class="mobile-nav-btn" data-screen="users">
+    <span class="icon">👥</span>Люди
+  </button>
+  <button class="mobile-nav-btn" data-screen="receipts">
+    <span class="icon">🧾</span>Чеки
+    <span class="dot" id="mobile-receipts-badge" style="display:none;">0</span>
+  </button>
+  <button class="mobile-nav-btn" data-screen="settings">
+    <span class="icon">⚙️</span>Настр.
+  </button>
+</nav>
+
+<!-- МОДАЛКИ -->
 <div class="modal-overlay" id="modal-add">
   <div class="modal">
     <h3>Новый пользователь</h3>
@@ -440,11 +527,12 @@
 </div>
 
 <div class="modal-overlay" id="modal-receipt-view">
-  <div class="modal" style="max-width:700px;">
+  <div class="modal" style="max-width:800px;">
     <h3>Чек</h3>
     <img id="receipt-view-img" style="width:100%;border-radius:8px;">
     <div class="modal-actions">
       <button class="btn btn-secondary" data-close-modal>Закрыть</button>
+      <a id="receipt-download" class="btn btn-primary" download target="_blank">Скачать</a>
     </div>
   </div>
 </div>
@@ -452,17 +540,14 @@
 <div class="modal-overlay" id="modal-import-excel">
   <div class="modal" style="max-width:640px;">
     <h3>📊 Импорт пользователей из Excel</h3>
-
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5;">
-      Формат файла: <b>столбец 1</b> — ФИО, <b>столбец 2</b> — код доступа.
+      Формат: <b>столбец 1</b> — ФИО, <b>столбец 2</b> — код доступа.
       Первая строка считается заголовком и пропускается.
     </p>
-
     <div class="file-input-wrap" style="margin-bottom:16px;">
       <input type="file" id="excel-file" accept=".xlsx,.xls,.csv">
       <div class="file-input-label" id="excel-file-label">📎 Выберите .xlsx / .xls / .csv</div>
     </div>
-
     <div id="excel-preview" style="display:none;">
       <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">
         Найдено строк: <b id="excel-count">0</b>
@@ -476,12 +561,24 @@
         </table>
       </div>
     </div>
-
     <p class="settings-hint" id="excel-hint" style="margin-top:10px;"></p>
-
     <div class="modal-actions">
       <button class="btn btn-secondary" data-close-modal>Отмена</button>
       <button class="btn btn-primary" id="btn-import-confirm" disabled>Импортировать</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-info">
+  <div class="modal">
+    <h3 id="info-modal-title">Новая статья</h3>
+    <label>Заголовок</label>
+    <input type="text" id="info-title-input" placeholder="Например, Правила клуба">
+    <label>Текст</label>
+    <textarea id="info-content-input" placeholder="Текст статьи..."></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close-modal>Отмена</button>
+      <button class="btn btn-primary" id="btn-save-info">Сохранить</button>
     </div>
   </div>
 </div>
@@ -490,7 +587,7 @@
   <div class="modal" style="max-width:420px;">
     <h3>⚠️ Подтверждение</h3>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
-      Введите пароль, чтобы удалить чеки оплат, платежи, заявки на расход и предложения.
+      Введите пароль, чтобы удалить чеки оплат, платежи, заявки на расход, предложения и уведомления.
     </p>
     <label>Пароль</label>
     <input type="password" id="danger-password" placeholder="Пароль">
@@ -521,13 +618,13 @@
   const state = {
     monthlyFee: 1000,
     users: [], admins: [], expenses: [], payments: [],
-    expenseRequests: [], suggestions: []
+    expenseRequests: [], suggestions: [], info: []
   };
   let editingId = null, infoId = null, editMode = false, deleteExpenseMode = false;
   let pendingReceiptFile = null;
   let importRows = [];
+  let editingInfoId = null;
 
-  // ===== Саратовское время =====
   function getSaratovNow() {
     const fmt = new Intl.DateTimeFormat('ru-RU', {
       timeZone:'Europe/Saratov', year:'numeric', month:'numeric', day:'numeric'
@@ -545,9 +642,23 @@
     return null;
   }
 
-  // ===== Загрузка =====
+  function fmtDateTime(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'только что';
+    if (diffMin < 60) return diffMin + ' мин назад';
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return diffH + ' ч назад';
+    const diffD = Math.floor(diffH / 24);
+    if (diffD < 7) return diffD + ' дн назад';
+    return d.toLocaleDateString('ru-RU');
+  }
+
   async function loadAll() {
-    const [u, adm, m, e, p, er, s, c] = await Promise.all([
+    const [u, adm, m, e, p, er, s, inf, c] = await Promise.all([
       db.from('users').select('*').order('fio'),
       db.from('admins').select('*').order('fio'),
       db.from('months').select('*'),
@@ -555,22 +666,16 @@
       db.from('payments').select('*').order('created_at', { ascending:false }),
       db.from('expense_requests').select('*').order('created_at', { ascending:false }),
       db.from('suggestions').select('*').order('created_at', { ascending:false }),
+      db.from('info_articles').select('*').order('sort_order'),
       db.from('config').select('*').eq('id',1).maybeSingle()
     ]);
-    if (u.error) console.error('users:', u.error);
-    if (adm.error) console.error('admins:', adm.error);
-    if (m.error) console.error('months:', m.error);
-    if (e.error) console.error('expenses:', e.error);
-    if (p.error) console.error('payments:', p.error);
-    if (er.error) console.error('expense_requests:', er.error);
-    if (s.error) console.error('suggestions:', s.error);
-
     state.monthlyFee = (c.data && c.data.monthly_fee) || 1000;
     state.expenses = e.data || [];
     state.payments = p.data || [];
     state.expenseRequests = er.data || [];
     state.suggestions = s.data || [];
     state.admins = adm.data || [];
+    state.info = inf.data || [];
     state.users = (u.data || []).map(x => ({ ...x, paid: Array(12).fill(null) }));
     const year = getSaratovNow().year;
     (m.data || []).forEach(row => {
@@ -586,8 +691,14 @@
     const n = state.payments.filter(p => p.status === 'pending').length
             + state.expenseRequests.filter(r => r.status === 'pending').length;
     const b = document.getElementById('receipts-badge');
-    if (n > 0) { b.textContent = n; b.style.display = 'inline-block'; }
-    else { b.style.display = 'none'; }
+    const bm = document.getElementById('mobile-receipts-badge');
+    if (n > 0) {
+      b.textContent = n; b.style.display = 'inline-block';
+      bm.textContent = n; bm.style.display = 'flex';
+    } else {
+      b.style.display = 'none';
+      bm.style.display = 'none';
+    }
   }
 
   function calcDebt(user) {
@@ -608,10 +719,13 @@
 
   // ===== Навигация =====
   const navButtons = document.querySelectorAll('.nav-btn');
+  const mobileNavButtons = document.querySelectorAll('.mobile-nav-btn');
   const screens = document.querySelectorAll('.screen');
+
   function showScreen(name) {
     screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
     navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
+    mobileNavButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
     location.hash = name;
     if (name === 'home') renderHome();
     if (name === 'expenses') renderExpenses();
@@ -619,11 +733,12 @@
     if (name === 'receipts') renderReceipts();
     if (name === 'expense-requests') renderRequests();
     if (name === 'suggestions') renderSuggestions();
+    if (name === 'info') renderInfoArticles();
     if (name === 'history') renderHistory();
   }
   navButtons.forEach(b => b.addEventListener('click', function(){ showScreen(this.dataset.screen); }));
+  mobileNavButtons.forEach(b => b.addEventListener('click', function(){ showScreen(this.dataset.screen); }));
 
-  // ===== Модалки =====
   function openModal(id) { document.getElementById(id).classList.add('active'); }
   function closeModal(el) { el.closest('.modal-overlay').classList.remove('active'); }
   document.querySelectorAll('[data-close-modal]').forEach(b => b.addEventListener('click', function(e){ closeModal(e.target); }));
@@ -695,12 +810,13 @@
       tr.innerHTML =
         '<td>' + escapeHtml(u.fio) + '</td>' +
         '<td>' + escapeHtml(u.code) + '</td>' +
+        '<td style="color:var(--muted);font-size:12px;">' + fmtDateTime(u.last_login) + '</td>' +
         '<td class="debt ' + (debt>0?'has-debt':'no-debt') + '">' + (debt>0 ? debt.toLocaleString('ru-RU')+' ₽' : '—') + '</td>' +
         '<td><button class="btn-icon" data-info="' + u.id + '">Инфо</button>' +
         (editMode ? ' <button class="btn-icon" data-edit="' + u.id + '">Ред.</button>' : '') + '</td>';
       tbody.appendChild(tr);
     });
-    if (!state.users.length) tbody.innerHTML = '<tr><td colspan="4" class="empty">Пока нет пользователей</td></tr>';
+    if (!state.users.length) tbody.innerHTML = '<tr><td colspan="5" class="empty">Пока нет пользователей</td></tr>';
   }
 
   document.getElementById('btn-add-user').addEventListener('click', function(){
@@ -821,7 +937,6 @@
         document.getElementById('excel-hint').style.color = 'var(--red)';
         return;
       }
-
       const existingCodes = new Set(state.users.map(u => (u.code || '').trim().toLowerCase()));
       const existingFios = new Set(state.users.map(u => (u.fio || '').trim().toLowerCase()));
       const seenCodes = new Set();
@@ -829,24 +944,14 @@
       importRows = rows.map(function(r){
         const codeKey = r.code.trim().toLowerCase();
         const fioKey = r.fio.trim().toLowerCase();
-        let status = 'ok';
-        let error = '';
-
-        if (!r.fio || !r.code) {
-          status = 'error'; error = 'Пустые поля';
-        } else if (existingCodes.has(codeKey)) {
-          status = 'skip'; error = 'Код уже есть';
-        } else if (existingFios.has(fioKey)) {
-          status = 'skip'; error = 'ФИО уже есть';
-        } else if (seenCodes.has(codeKey)) {
-          status = 'skip'; error = 'Дубль в файле';
-        } else {
-          seenCodes.add(codeKey);
-        }
-
+        let status = 'ok', error = '';
+        if (!r.fio || !r.code) { status = 'error'; error = 'Пустые поля'; }
+        else if (existingCodes.has(codeKey)) { status = 'skip'; error = 'Код уже есть'; }
+        else if (existingFios.has(fioKey)) { status = 'skip'; error = 'ФИО уже есть'; }
+        else if (seenCodes.has(codeKey)) { status = 'skip'; error = 'Дубль в файле'; }
+        else { seenCodes.add(codeKey); }
         return { fio: r.fio.trim(), code: r.code.trim(), status: status, error: error };
       });
-
       renderExcelPreview();
     } catch (err) {
       console.error(err);
@@ -857,29 +962,22 @@
 
   async function parseExcel(file) {
     const isCsv = /\.csv$/i.test(file.name);
-
     if (isCsv) {
-      const text = await file.text();
+      const buf = await file.arrayBuffer();
+      let text = decodeCsvBuffer(buf).replace(/^\uFEFF/, '');
       const lines = text.split(/\r?\n/).filter(function(l){ return l.trim(); });
       const rows = [];
       for (let i = 1; i < lines.length; i++) {
         const parts = parseCsvLine(lines[i]);
-        if (parts.length >= 2) {
-          rows.push({ fio: parts[0] || '', code: parts[1] || '' });
-        }
+        if (parts.length >= 2) rows.push({ fio: parts[0] || '', code: parts[1] || '' });
       }
       return rows;
     }
-
-    if (typeof XLSX === 'undefined') {
-      throw new Error('Библиотека SheetJS не загрузилась');
-    }
-
+    if (typeof XLSX === 'undefined') throw new Error('Библиотека SheetJS не загрузилась');
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: 'array' });
     const ws = wb.Sheets[wb.SheetNames[0]];
     const data = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: '' });
-
     const rows = [];
     for (let i = 1; i < data.length; i++) {
       const r = data[i];
@@ -891,10 +989,24 @@
     return rows;
   }
 
+  function decodeCsvBuffer(buf) {
+    const bytes = new Uint8Array(buf);
+    if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+      return new TextDecoder('utf-8').decode(buf);
+    }
+    if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+      return new TextDecoder('utf-16le').decode(buf);
+    }
+    if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+      return new TextDecoder('utf-16be').decode(buf);
+    }
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+    catch (e) { return new TextDecoder('windows-1251').decode(buf); }
+  }
+
   function parseCsvLine(line) {
     const result = [];
-    let cur = '';
-    let inQuotes = false;
+    let cur = '', inQuotes = false;
     for (let i = 0; i < line.length; i++) {
       const ch = line[i];
       if (ch === '"') {
@@ -902,9 +1014,7 @@
         else inQuotes = !inQuotes;
       } else if ((ch === ',' || ch === ';' || ch === '\t') && !inQuotes) {
         result.push(cur); cur = '';
-      } else {
-        cur += ch;
-      }
+      } else cur += ch;
     }
     result.push(cur);
     return result;
@@ -914,14 +1024,11 @@
     const tbody = document.getElementById('excel-preview-tbody');
     const countEl = document.getElementById('excel-count');
     const hintEl = document.getElementById('excel-hint');
-
     tbody.innerHTML = '';
-    const okCount = importRows.filter(function(r){ return r.status === 'ok'; }).length;
-    const skipCount = importRows.filter(function(r){ return r.status === 'skip'; }).length;
-    const errCount = importRows.filter(function(r){ return r.status === 'error'; }).length;
-
+    const okCount = importRows.filter(r => r.status === 'ok').length;
+    const skipCount = importRows.filter(r => r.status === 'skip').length;
+    const errCount = importRows.filter(r => r.status === 'error').length;
     countEl.textContent = importRows.length;
-
     importRows.forEach(function(r){
       const tr = document.createElement('tr');
       let badge = '';
@@ -933,34 +1040,27 @@
         '<td style="padding:8px 10px;font-size:12px;">' + badge + '</td>';
       tbody.appendChild(tr);
     });
-
     document.getElementById('excel-preview').style.display = 'block';
-
     if (okCount === 0) {
       hintEl.textContent = 'Нет новых пользователей для импорта';
       hintEl.style.color = 'var(--yellow)';
       document.getElementById('btn-import-confirm').disabled = true;
     } else {
-      hintEl.textContent = 'Готовы к импорту: ' + okCount +
-        (skipCount ? ' · Пропущено: ' + skipCount : '') +
-        (errCount ? ' · Ошибок: ' + errCount : '');
+      hintEl.textContent = 'Готовы к импорту: ' + okCount + (skipCount ? ' · Пропущено: ' + skipCount : '') + (errCount ? ' · Ошибок: ' + errCount : '');
       hintEl.style.color = 'var(--green)';
       document.getElementById('btn-import-confirm').disabled = false;
     }
   }
 
   document.getElementById('btn-import-confirm').addEventListener('click', async function(){
-    const toImport = importRows.filter(function(r){ return r.status === 'ok'; });
+    const toImport = importRows.filter(r => r.status === 'ok');
     if (!toImport.length) return;
-
     const btn = this;
     btn.disabled = true; btn.textContent = 'Импортируем…';
-
     try {
       const payload = toImport.map(function(r){ return { fio: r.fio, code: r.code }; });
       const res = await db.from('users').insert(payload);
       if (res.error) throw res.error;
-
       await loadAll();
       renderUsers(); renderHome();
       closeModal(document.getElementById('btn-import-confirm'));
@@ -1043,8 +1143,7 @@
     const reader = new FileReader();
     reader.onload = function(ev){
       const img = document.getElementById('exp-receipt-preview');
-      img.src = ev.target.result;
-      img.style.display = 'block';
+      img.src = ev.target.result; img.style.display = 'block';
     };
     reader.readAsDataURL(f);
   });
@@ -1055,10 +1154,8 @@
     const qty = Number(document.getElementById('exp-qty').value) || 1;
     const price = Number(document.getElementById('exp-price').value) || 0;
     if (!date || !name) { alert('Заполните дату и название'); return; }
-
     const btn = document.getElementById('btn-save-expense');
     btn.disabled = true; btn.textContent = 'Сохраняем…';
-
     let receipt_url = null, receipt_path = null;
     try {
       if (pendingReceiptFile) {
@@ -1079,11 +1176,8 @@
       closeModal(document.getElementById('btn-save-expense'));
       pendingReceiptFile = null;
     } catch (err) {
-      console.error(err);
-      alert('Ошибка: ' + (err.message || 'неизвестная'));
-    } finally {
-      btn.disabled = false; btn.textContent = 'Сохранить';
-    }
+      console.error(err); alert('Ошибка: ' + (err.message || 'неизвестная'));
+    } finally { btn.disabled = false; btn.textContent = 'Сохранить'; }
   });
 
   const delModeBtn = document.getElementById('btn-delete-mode');
@@ -1096,11 +1190,7 @@
   });
   document.getElementById('expenses-tbody').addEventListener('click', async function(e){
     const view = e.target.closest('[data-view]');
-    if (view) {
-      document.getElementById('receipt-view-img').src = view.dataset.view;
-      openModal('modal-receipt-view');
-      return;
-    }
+    if (view) { openReceiptView(view.dataset.view); return; }
     const d = e.target.closest('[data-del-exp]');
     if (!d) return;
     if (!confirm('Удалить расход?')) return;
@@ -1113,6 +1203,12 @@
     await loadAll();
     renderExpenses(); renderHome();
   });
+
+  function openReceiptView(url) {
+    document.getElementById('receipt-view-img').src = url;
+    document.getElementById('receipt-download').href = url;
+    openModal('modal-receipt-view');
+  }
 
   // ===== ЧЕКИ ОПЛАТ =====
   function renderReceipts() {
@@ -1127,7 +1223,6 @@
       if (p.status === 'reason') statusHtml = '<span class="badge-status reason">📌 ' + (p.reason==='otp'?'Отпуск':'Командировка') + '</span>';
       if (p.status === 'approved') statusHtml = '<span class="badge-status approved">✅ Одобрено</span>';
       if (p.status === 'rejected') statusHtml = '<span class="badge-status rejected">❌ Отклонено</span>';
-
       const tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + new Date(p.created_at).toLocaleString('ru-RU') + '</td>' +
@@ -1142,11 +1237,8 @@
 
   document.getElementById('receipts-tbody').addEventListener('click', async function(e){
     const view = e.target.closest('[data-view]');
-    if (view) {
-      document.getElementById('receipt-view-img').src = view.dataset.view;
-      openModal('modal-receipt-view');
-      return;
-    }
+    if (view) { openReceiptView(view.dataset.view); return; }
+
     const ap = e.target.closest('[data-approve]');
     if (ap) {
       const id = Number(ap.dataset.approve);
@@ -1157,9 +1249,13 @@
         { user_id: p.user_id, year: p.year, month: p.month, status: 'paid' },
         { onConflict: 'user_id,year,month' }
       );
-      if (p.receipt_path) {
-        await db.storage.from('receipts').remove([p.receipt_path]).catch(function(){});
-      }
+      // Уведомление пользователю
+      await db.from('notifications').insert({
+        user_id: p.user_id,
+        type: 'payment_approved',
+        message: 'Ваш взнос за ' + MONTHS[p.month] + ' одобрен ✓'
+      });
+      if (p.receipt_path) await db.storage.from('receipts').remove([p.receipt_path]).catch(function(){});
       await db.from('payments').delete().eq('id', id);
       await loadAll();
       renderReceipts(); renderHome(); renderUsers();
@@ -1171,9 +1267,13 @@
       const p = state.payments.find(function(x){ return x.id === id; });
       if (!p) return;
       if (!confirm('Отклонить заявку? Чек будет удалён с сервера.')) return;
-      if (p.receipt_path) {
-        await db.storage.from('receipts').remove([p.receipt_path]).catch(function(){});
-      }
+      // Уведомление
+      await db.from('notifications').insert({
+        user_id: p.user_id,
+        type: 'payment_rejected',
+        message: 'Ваш взнос за ' + MONTHS[p.month] + ' отклонён ✗'
+      });
+      if (p.receipt_path) await db.storage.from('receipts').remove([p.receipt_path]).catch(function(){});
       await db.from('payments').delete().eq('id', id);
       await loadAll();
       renderReceipts();
@@ -1192,7 +1292,6 @@
       if (r.status === 'pending') statusHtml = '<span class="badge-status pending">⏳ На проверке</span>';
       if (r.status === 'approved') statusHtml = '<span class="badge-status approved">✅ Одобрено</span>';
       if (r.status === 'rejected') statusHtml = '<span class="badge-status rejected">❌ Отклонено</span>';
-
       const tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + (r.date || '') + '</td>' +
@@ -1208,11 +1307,7 @@
 
   document.getElementById('requests-tbody').addEventListener('click', async function(e){
     const view = e.target.closest('[data-view]');
-    if (view) {
-      document.getElementById('receipt-view-img').src = view.dataset.view;
-      openModal('modal-receipt-view');
-      return;
-    }
+    if (view) { openReceiptView(view.dataset.view); return; }
     const ap = e.target.closest('[data-approve-req]');
     if (ap) {
       const id = Number(ap.dataset.approveReq);
@@ -1220,12 +1315,13 @@
       if (!r) return;
       if (!confirm('Одобрить? Расход будет добавлен в общий список (чек сохранится).')) return;
       await db.from('expenses').insert({
-        date: r.date,
-        name: r.name,
-        qty: 1,
-        price: r.price,
-        receipt_url: r.receipt_url,
-        receipt_path: r.receipt_path
+        date: r.date, name: r.name, qty: 1, price: r.price,
+        receipt_url: r.receipt_url, receipt_path: r.receipt_path
+      });
+      await db.from('notifications').insert({
+        user_id: r.user_id,
+        type: 'expense_approved',
+        message: 'Ваш расход «' + r.name + '» одобрен ✓'
       });
       await db.from('expense_requests').delete().eq('id', id);
       await loadAll();
@@ -1238,9 +1334,12 @@
       const r = state.expenseRequests.find(function(x){ return x.id === id; });
       if (!r) return;
       if (!confirm('Отклонить заявку? Чек будет удалён с сервера.')) return;
-      if (r.receipt_path) {
-        await db.storage.from('expense-receipts').remove([r.receipt_path]).catch(function(){});
-      }
+      await db.from('notifications').insert({
+        user_id: r.user_id,
+        type: 'expense_rejected',
+        message: 'Ваш расход «' + r.name + '» отклонён ✗'
+      });
+      if (r.receipt_path) await db.storage.from('expense-receipts').remove([r.receipt_path]).catch(function(){});
       await db.from('expense_requests').delete().eq('id', id);
       await loadAll();
       renderRequests();
@@ -1260,6 +1359,68 @@
         '</div>';
     }).join('');
   }
+
+  // ===== ИНФО (статьи) =====
+  function renderInfoArticles() {
+    const box = document.getElementById('info-list');
+    if (!state.info.length) {
+      box.innerHTML = '<div class="card empty">Пока нет статей. Нажмите «+ Добавить статью».</div>';
+      return;
+    }
+    box.innerHTML = state.info.map(function(a){
+      return '<div class="info-article">' +
+        '<h4>' + escapeHtml(a.title) + '</h4>' +
+        '<p>' + escapeHtml(a.content) + '</p>' +
+        '<div style="margin-top:10px;display:flex;gap:8px;">' +
+        '<button class="btn-icon" data-edit-info="' + a.id + '">Ред.</button>' +
+        '<button class="btn-danger-outline" data-del-info="' + a.id + '">Удалить</button>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  document.getElementById('btn-add-info').addEventListener('click', function(){
+    editingInfoId = null;
+    document.getElementById('info-modal-title').textContent = 'Новая статья';
+    document.getElementById('info-title-input').value = '';
+    document.getElementById('info-content-input').value = '';
+    openModal('modal-add-info');
+  });
+
+  document.getElementById('info-list').addEventListener('click', async function(e){
+    const ed = e.target.closest('[data-edit-info]');
+    if (ed) {
+      const id = Number(ed.dataset.editInfo);
+      const a = state.info.find(function(x){ return x.id === id; });
+      editingInfoId = id;
+      document.getElementById('info-modal-title').textContent = 'Редактирование статьи';
+      document.getElementById('info-title-input').value = a.title;
+      document.getElementById('info-content-input').value = a.content;
+      openModal('modal-add-info');
+      return;
+    }
+    const d = e.target.closest('[data-del-info]');
+    if (d) {
+      if (!confirm('Удалить статью?')) return;
+      await db.from('info_articles').delete().eq('id', Number(d.dataset.delInfo));
+      await loadAll();
+      renderInfoArticles();
+    }
+  });
+
+  document.getElementById('btn-save-info').addEventListener('click', async function(){
+    const title = document.getElementById('info-title-input').value.trim();
+    const content = document.getElementById('info-content-input').value.trim();
+    if (!title || !content) { alert('Заполните заголовок и текст'); return; }
+    if (editingInfoId) {
+      await db.from('info_articles').update({ title: title, content: content }).eq('id', editingInfoId);
+    } else {
+      await db.from('info_articles').insert({ title: title, content: content });
+    }
+    await loadAll();
+    renderInfoArticles();
+    closeModal(document.getElementById('btn-save-info'));
+  });
 
   // ===== ИСТОРИЯ =====
   function buildHistory() {
@@ -1283,12 +1444,10 @@
       const d = e.date || '';
       const mi = d ? new Date(d).getMonth() : null;
       items.push({
-        type: 'expense',
-        date: d,
+        type: 'expense', date: d,
         description: e.name + ' ×' + e.qty,
         amount: -((Number(e.qty)||0)*(Number(e.price)||0)),
-        monthIndex: mi,
-        userId: null
+        monthIndex: mi, userId: null
       });
     });
     return items.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
@@ -1350,7 +1509,6 @@
     renderHome(); renderUsers();
   });
 
-  // ===== АДМИНЫ =====
   function renderAdminList() {
     const box = document.getElementById('admin-list');
     box.innerHTML = '';
@@ -1392,17 +1550,17 @@
     renderHome();
   });
 
-  // ===== ЭКСПОРТ =====
   document.getElementById('btn-export').addEventListener('click', async function(){
     await loadAll();
     const dump = {
       monthlyFee: state.monthlyFee,
-      users: state.users.map(function(u){ return { id: u.id, fio: u.fio, code: u.code, paid: u.paid }; }),
+      users: state.users.map(function(u){ return { id: u.id, fio: u.fio, code: u.code, paid: u.paid, last_login: u.last_login }; }),
       admins: state.admins,
       expenses: state.expenses,
       payments: state.payments,
       expenseRequests: state.expenseRequests,
       suggestions: state.suggestions,
+      info: state.info,
       exportedAt: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
@@ -1416,30 +1574,24 @@
     setTimeout(function(){ document.getElementById('file-hint').textContent = ''; }, 2000);
   });
 
-  // ===== ОЧИСТКА СТАРЫХ ЧЕКОВ =====
   document.getElementById('btn-clean-receipts').addEventListener('click', async function(){
     if (!confirm('Удалить фото чеков расходов старше 2 месяцев? Сами расходы останутся.')) return;
     const hint = document.getElementById('clean-hint');
     hint.textContent = 'Ищем…';
-
     const threshold = new Date();
     threshold.setMonth(threshold.getMonth() - 2);
     const thresholdIso = threshold.toISOString().slice(0,10);
-
     const old = state.expenses.filter(function(e){
       return e.receipt_path && e.date && e.date < thresholdIso;
     });
-
     if (!old.length) {
       hint.textContent = 'Нечего удалять — старых чеков нет';
       setTimeout(function(){ hint.textContent = ''; }, 3000);
       return;
     }
-
     const paths = old.map(function(e){ return e.receipt_path; });
     const rm = await db.storage.from('expense-receipts').remove(paths);
     if (rm.error) { hint.textContent = 'Ошибка: ' + rm.error.message; return; }
-
     for (let i = 0; i < old.length; i++) {
       await db.from('expenses').update({ receipt_url: null, receipt_path: null }).eq('id', old[i].id);
     }
@@ -1449,7 +1601,6 @@
     setTimeout(function(){ hint.textContent = ''; }, 4000);
   });
 
-  // ===== ОПАСНАЯ ЗОНА =====
   document.getElementById('btn-danger-reset').addEventListener('click', function(){
     document.getElementById('danger-password').value = '';
     document.getElementById('danger-error').textContent = '';
@@ -1460,29 +1611,20 @@
     const pass = document.getElementById('danger-password').value;
     const errEl = document.getElementById('danger-error');
     errEl.textContent = '';
-
-    if (pass !== DANGER_PASSWORD) {
-      errEl.textContent = 'Неверный пароль';
-      return;
-    }
-
+    if (pass !== DANGER_PASSWORD) { errEl.textContent = 'Неверный пароль'; return; }
     const btn = this;
     btn.disabled = true; btn.textContent = 'Удаляем…';
-
     try {
       const paths1 = state.payments.filter(function(p){ return p.receipt_path; }).map(function(p){ return p.receipt_path; });
       const paths2 = state.expenseRequests.filter(function(r){ return r.receipt_path; }).map(function(r){ return r.receipt_path; });
-
       if (paths1.length) await db.storage.from('receipts').remove(paths1).catch(function(){});
       if (paths2.length) await db.storage.from('expense-receipts').remove(paths2).catch(function(){});
-
       await db.from('payments').delete().neq('id', 0);
       await db.from('expense_requests').delete().neq('id', 0);
       await db.from('suggestions').delete().neq('id', 0);
-
+      await db.from('notifications').delete().neq('id', 0);
       await loadAll();
       renderHome(); renderReceipts(); renderRequests(); renderSuggestions();
-
       closeModal(document.getElementById('btn-danger-confirm'));
       alert('Готово! Всё удалено.');
     } catch (err) {
@@ -1493,7 +1635,6 @@
     }
   });
 
-  // ===== ОБНОВИТЬ =====
   document.getElementById('btn-refresh').addEventListener('click', async function(){
     const btn = this;
     btn.disabled = true; btn.textContent = '🔄 …';
