@@ -100,10 +100,58 @@
   .month-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
   .month-btn { padding:11px 4px; border:1px solid var(--border); border-radius:10px;
                background:#fff; cursor:pointer; font-size:13px; font-weight:500; font-family:inherit;
-               transition:all .15s; }
-  .month-btn:hover:not(:disabled) { border-color:var(--primary); }
+               transition:all .15s; position:relative; }
+  .month-btn:hover:not(:disabled):not(.locked) { border-color:var(--primary); }
   .month-btn.selected { background:var(--primary); color:#fff; border-color:var(--primary); }
   .month-btn:disabled { opacity:.35; cursor:not-allowed; }
+
+  /* Зелёный — оплачено */
+  .month-btn.paid-locked {
+    background:#dcfce7;
+    color:#166534;
+    border-color:#86efac;
+    cursor:not-allowed;
+    font-weight:600;
+  }
+  .month-btn.paid-locked::after {
+    content:"✓";
+    margin-left:4px;
+    font-weight:700;
+  }
+
+  /* Жёлтый — отпуск */
+  .month-btn.otp-locked {
+    background:#fef3c7;
+    color:#92400e;
+    border-color:#fcd34d;
+    cursor:not-allowed;
+    font-weight:600;
+  }
+  /* Синий — командировка */
+  .month-btn.kmd-locked {
+    background:#dbeafe;
+    color:#1e40af;
+    border-color:#93c5fd;
+    cursor:not-allowed;
+    font-weight:600;
+  }
+
+  /* Красный — просрочено (не сдал в прошлом) */
+  .month-btn.unpaid-locked {
+    background:#fee2e2;
+    color:#991b1b;
+    border-color:#fca5a5;
+    font-weight:500;
+  }
+
+  .legend-months { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; font-size:11px; color:var(--muted); }
+  .legend-months span { display:inline-flex; align-items:center; gap:4px; }
+  .legend-dot { width:12px; height:12px; border-radius:4px; }
+  .legend-dot.paid { background:#dcfce7; border:1px solid #86efac; }
+  .legend-dot.otp { background:#fef3c7; border:1px solid #fcd34d; }
+  .legend-dot.kmd { background:#dbeafe; border:1px solid #93c5fd; }
+  .legend-dot.free { background:#fff; border:1px solid var(--border); }
+  .legend-dot.unpaid { background:#fee2e2; border:1px solid #fca5a5; }
 
   .file-input-wrap { position:relative; margin-bottom:14px; }
   .file-input-wrap input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
@@ -175,6 +223,12 @@
   <div class="modal">
     <h3>Оплата взноса</h3>
     <label>Выберите месяц</label>
+    <div class="legend-months">
+      <span><span class="legend-dot paid"></span> Оплачено</span>
+      <span><span class="legend-dot otp"></span> Отпуск</span>
+      <span><span class="legend-dot kmd"></span> Командировка</span>
+      <span><span class="legend-dot free"></span> Можно сдать</span>
+    </div>
     <div class="month-grid" id="pay-months"></div>
     <label>Скриншот чека (обязательно)</label>
     <div class="file-input-wrap">
@@ -191,6 +245,12 @@
   <div class="modal">
     <h3>Причина пропуска</h3>
     <label>Выберите месяц</label>
+    <div class="legend-months">
+      <span><span class="legend-dot paid"></span> Оплачено</span>
+      <span><span class="legend-dot otp"></span> Отпуск</span>
+      <span><span class="legend-dot kmd"></span> Командировка</span>
+      <span><span class="legend-dot free"></span> Можно выбрать</span>
+    </div>
     <div class="month-grid" id="skip-months"></div>
     <label>Причина</label>
     <select id="skip-reason">
@@ -236,10 +296,43 @@
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const MONTHS_SHORT = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
 
   let currentUser = null;
   let selectedMonth = null;
+  let myMonths = Array(12).fill(null); // статусы текущего года
 
+  // ====== Саратовское время ======
+  function getSaratovNow() {
+    const fmt = new Intl.DateTimeFormat('ru-RU', {
+      timeZone:'Europe/Saratov', year:'numeric', month:'numeric', day:'numeric'
+    });
+    const o = {}; fmt.formatToParts(new Date()).forEach(p => o[p.type] = p.value);
+    return { year:+o.year, month:+o.month-1, day:+o.day };
+  }
+  function isCurrentMonthBillable() { return getSaratovNow().day >= 15; }
+
+  // «Эффективный» статус: если null и месяц уже прошёл — unpaid
+  function effectiveMyStatus(mIdx) {
+    const s = myMonths[mIdx];
+    if (s) return s;
+    const now = getSaratovNow();
+    if (mIdx < now.month) return 'unpaid';
+    if (mIdx === now.month && isCurrentMonthBillable()) return 'unpaid';
+    return null;
+  }
+
+  // ====== Загрузка моих статусов ======
+  async function loadMyMonths() {
+    const year = new Date().getFullYear();
+    const res = await db.from('months').select('*').eq('user_id', currentUser.id).eq('year', year);
+    myMonths = Array(12).fill(null);
+    (res.data || []).forEach(function(row){
+      if (row.month >= 0 && row.month <= 11) myMonths[row.month] = row.status;
+    });
+  }
+
+  // ====== Вход ======
   document.getElementById('btn-login').addEventListener('click', async function(){
     const fio = document.getElementById('auth-name').value.trim();
     const code = document.getElementById('auth-code').value.trim();
@@ -261,6 +354,7 @@
     await loadMain();
   });
 
+  // Авто-вход
   (async function(){
     let saved = null;
     try { saved = sessionStorage.getItem('gocash_user'); } catch(e){}
@@ -276,9 +370,11 @@
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('main-screen').style.display = 'block';
     document.getElementById('user-fio').textContent = currentUser.fio;
-    await Promise.all([loadBalance(), loadSuggestions(), loadMyHistory()]);
+    await Promise.all([loadMyMonths(), loadBalance(), loadSuggestions()]);
+    await loadMyHistory();
   }
 
+  // ====== Баланс ======
   async function loadBalance() {
     const [conf, months, expenses] = await Promise.all([
       db.from('config').select('monthly_fee').eq('id',1).maybeSingle(),
@@ -295,7 +391,7 @@
       'Сдано: ' + income.toLocaleString('ru-RU') + ' ₽ · Расходы: ' + spent.toLocaleString('ru-RU') + ' ₽';
   }
 
-  // ===== МОЯ ИСТОРИЯ =====
+  // ====== Моя история ======
   async function loadMyHistory() {
     const box = document.getElementById('my-history');
     box.innerHTML = '<div class="loader">Загрузка…</div>';
@@ -310,7 +406,6 @@
     const year = new Date().getFullYear();
     const items = [];
 
-    // мои взносы
     (months.data || []).forEach(function(m){
       if (m.year !== year) return;
       let label = '';
@@ -321,12 +416,11 @@
       items.push({
         date: year + '-' + String(m.month+1).padStart(2,'0') + '-15',
         desc: label,
-        amount: m.status === 'paid' ? -fee : 0,
-        kind: m.status === 'paid' ? 'expense' : 'neutral'
+        amount: m.status === 'paid' ? fee : 0,
+        kind: m.status === 'paid' ? 'income' : 'neutral'
       });
     });
 
-    // расходы клуба (показываем всем — это публичные данные)
     (expenses.data || []).forEach(function(e){
       items.push({
         date: e.date,
@@ -338,8 +432,6 @@
 
     items.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
 
-    // Отфильтруем: показываем только мои взносы + общие расходы, чтобы не путать
-    // На самом деле для клиента — оставим только его взносы + расходы клуба
     if (!items.length) {
       box.innerHTML = '<div class="empty">Пока нет записей</div>';
       return;
@@ -357,16 +449,58 @@
     }).join('');
   }
 
-  function renderMonthSelector(containerId) {
+  // ====== Выбор месяца ======
+  // mode: 'pay' — блокируем paid/otp/kmd; 'skip' — блокируем paid/otp/kmd тоже
+  function renderMonthSelector(containerId, mode) {
     const grid = document.getElementById(containerId);
     grid.innerHTML = '';
-    const cur = new Date().getMonth();
+    const now = getSaratovNow();
     selectedMonth = null;
+
     MONTHS.forEach(function(m, i){
       const b = document.createElement('button');
       b.className = 'month-btn';
-      b.textContent = m;
-      if (i > cur) { b.disabled = true; b.title = 'Будущий месяц'; }
+      b.textContent = MONTHS_SHORT[i];
+
+      const rawStatus = myMonths[i];  // явный статус (или null)
+      const isFuture = i > now.month;
+
+      // будущее — отключено
+      if (isFuture) {
+        b.disabled = true;
+        b.title = 'Будущий месяц';
+        grid.appendChild(b);
+        return;
+      }
+
+      // уже отмечено — блокируем, красим
+      if (rawStatus === 'paid') {
+        b.classList.add('paid-locked');
+        b.disabled = true;
+        b.title = m + ': оплачено ✓';
+        grid.appendChild(b);
+        return;
+      }
+      if (rawStatus === 'otp') {
+        b.classList.add('otp-locked');
+        b.disabled = true;
+        b.title = m + ': отпуск';
+        grid.appendChild(b);
+        return;
+      }
+      if (rawStatus === 'kmd') {
+        b.classList.add('kmd-locked');
+        b.disabled = true;
+        b.title = m + ': командировка';
+        grid.appendChild(b);
+        return;
+      }
+      if (rawStatus === 'unpaid') {
+        b.classList.add('unpaid-locked');
+        b.title = m + ': отмечено «не сдал»';
+      }
+
+      // свободно (null или unpaid — можно кликнуть)
       b.addEventListener('click', function(){
         grid.querySelectorAll('.month-btn').forEach(function(x){ x.classList.remove('selected'); });
         b.classList.add('selected');
@@ -376,8 +510,10 @@
     });
   }
 
-  document.getElementById('btn-pay').addEventListener('click', function(){
-    renderMonthSelector('pay-months');
+  // ====== СДАЛ ======
+  document.getElementById('btn-pay').addEventListener('click', async function(){
+    await loadMyMonths();
+    renderMonthSelector('pay-months', 'pay');
     document.getElementById('pay-receipt').value = '';
     document.getElementById('pay-file-label').textContent = '📎 Нажмите, чтобы выбрать файл';
     const prev = document.getElementById('pay-preview');
@@ -425,7 +561,7 @@
       });
       if (ins.error) throw ins.error;
 
-      alert('Чек отправлен на проверку ✓');
+      alert('Чек отправлен на проверку ✓\nПосле одобрения администратором месяц станет зелёным.');
       document.getElementById('modal-pay').classList.remove('active');
     } catch (err) {
       console.error(err);
@@ -435,8 +571,10 @@
     }
   });
 
-  document.getElementById('btn-skip').addEventListener('click', function(){
-    renderMonthSelector('skip-months');
+  // ====== НЕ СДАЮ ======
+  document.getElementById('btn-skip').addEventListener('click', async function(){
+    await loadMyMonths();
+    renderMonthSelector('skip-months', 'skip');
     document.getElementById('modal-skip').classList.add('active');
   });
 
@@ -444,19 +582,32 @@
     if (selectedMonth === null) { alert('Выберите месяц'); return; }
     const reason = document.getElementById('skip-reason').value;
 
-    const res = await db.from('payments').insert({
+    // 1. Заявка (для истории)
+    await db.from('payments').insert({
       user_id: currentUser.id,
       year: new Date().getFullYear(),
       month: selectedMonth,
       status: 'reason',
       reason: reason
     });
-    if (res.error) { alert('Ошибка: ' + res.error.message); return; }
 
+    // 2. Сразу проставляем в months — чтобы админ и клиент видели
+    await db.from('months').upsert(
+      {
+        user_id: currentUser.id,
+        year: new Date().getFullYear(),
+        month: selectedMonth,
+        status: reason
+      },
+      { onConflict: 'user_id,year,month' }
+    );
+
+    await loadMyMonths();
     alert('Причина отправлена ✓');
     document.getElementById('modal-skip').classList.remove('active');
   });
 
+  // ====== РАСХОДЫ ======
   document.getElementById('btn-expenses').addEventListener('click', async function(){
     const sel = document.getElementById('exp-month-select');
     sel.innerHTML = '';
@@ -498,6 +649,7 @@
       '<span>Итого</span><span>' + total.toLocaleString('ru-RU') + ' ₽</span></div>';
   }
 
+  // ====== ПРЕДЛОЖЕНИЯ ======
   document.getElementById('btn-suggest').addEventListener('click', function(){
     document.getElementById('suggest-text').value = '';
     document.getElementById('modal-suggest').classList.add('active');
@@ -535,17 +687,20 @@
     }).join('');
   }
 
+  // ====== ВЫХОД ======
   document.getElementById('btn-logout').addEventListener('click', function(e){
     e.preventDefault();
     if (!confirm('Выйти из аккаунта?')) return;
     try { sessionStorage.removeItem('gocash_user'); } catch(e){}
     currentUser = null;
+    myMonths = Array(12).fill(null);
     document.getElementById('auth-screen').style.display = 'block';
     document.getElementById('main-screen').style.display = 'none';
     document.getElementById('auth-name').value = '';
     document.getElementById('auth-code').value = '';
   });
 
+  // ====== ОБНОВИТЬ ======
   document.getElementById('btn-refresh').addEventListener('click', async function(){
     const btn = this;
     btn.disabled = true;
@@ -553,6 +708,7 @@
     btn.disabled = false;
   });
 
+  // ====== МОДАЛКИ ======
   document.querySelectorAll('[data-close-modal]').forEach(function(btn){
     btn.addEventListener('click', function(e){ e.target.closest('.modal-overlay').classList.remove('active'); });
   });
@@ -566,6 +722,7 @@
     });
   }
 
+  // ====== PWA ======
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('../service-worker.js').catch(function(){});
   }
