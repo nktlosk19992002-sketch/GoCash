@@ -411,13 +411,38 @@
     return isNaN(n) ? currentUser.id : n;
   }
 
-  async function loadMyMonths() {
+    async function loadMyMonths() {
     const year = getSaratovNow().year;
-    const res = await db.from('months').select('*').eq('user_id', uid()).eq('year', year);
+    const userId = uid();
+
+    console.log('===== ДИАГНОСТИКА loadMyMonths =====');
+    console.log('1. currentUser:', currentUser);
+    console.log('2. currentUser.id:', currentUser ? currentUser.id : 'нет');
+    console.log('3. typeof id:', currentUser ? typeof currentUser.id : 'нет');
+    console.log('4. uid() вернул:', userId, '(тип:', typeof userId, ')');
+    console.log('5. год:', year, '(тип:', typeof year, ')');
+
+    // Тест: получить все записи без фильтра
+    const allRes = await db.from('months').select('*');
+    console.log('6. Всего записей в months:', (allRes.data || []).length);
+    console.log('7. Все записи:', allRes.data);
+
+    // Тест: отфильтровать только по user_id
+    const byUserRes = await db.from('months').select('*').eq('user_id', userId);
+    console.log('8. Записей с user_id =', userId, ':', (byUserRes.data || []).length);
+    console.log('9. Эти записи:', byUserRes.data);
+
+    // Основной запрос — с фильтром по году
+    const res = await db.from('months').select('*').eq('user_id', userId).eq('year', year);
+    console.log('10. Записей с user_id + year =', year, ':', (res.data || []).length);
+    console.log('11. Итог:', res.data);
+
     myMonths = Array(12).fill(null);
     if (res.data) res.data.forEach(function(row){
       if (row.month >= 0 && row.month <= 11) myMonths[row.month] = row.status;
     });
+    console.log('12. myMonths после обработки:', myMonths);
+    console.log('====================================');
   }
 
   // ===== ВХОД =====
