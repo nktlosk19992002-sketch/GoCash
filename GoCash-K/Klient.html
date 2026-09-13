@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
 <title>GoCash</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+<link rel="manifest" href="../manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -32,16 +34,19 @@
   .auth-card input:focus { border-color:var(--primary); }
   .auth-error { color:var(--red); font-size:13px; text-align:center; margin-top:10px; min-height:18px; }
 
-  .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:10px; }
   .header-logo { font-size:18px; font-weight:700; display:flex; align-items:center; gap:8px; }
   .header-logo-icon { width:28px; height:28px; border-radius:8px;
                       background:linear-gradient(135deg,#22c55e,#16a34a);
                       display:flex; align-items:center; justify-content:center; font-size:15px; }
   .header-logo-text span { color:#22c55e; }
-  .header-user { font-size:12px; color:var(--muted); text-align:right; }
+  .header-user { font-size:12px; color:var(--muted); text-align:right; display:flex; align-items:center; gap:10px; }
   .header-user b { display:block; font-size:13px; color:var(--text); font-weight:600; }
   .header-user a { color:var(--muted); text-decoration:none; }
   .header-user a:hover { color:var(--red); }
+  .refresh-btn { background:#fff; border:1px solid var(--border); border-radius:8px; padding:6px 10px;
+                 cursor:pointer; font-size:13px; font-family:inherit; }
+  .refresh-btn:hover { background:#f8fafc; }
 
   .balance-card { background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff;
                   border-radius:var(--radius); padding:22px; text-align:center; margin-bottom:20px;
@@ -69,6 +74,14 @@
   .suggestion { background:#fff; border-radius:12px; padding:14px 16px; margin-bottom:8px;
                 border:1px solid var(--border); font-size:14px; line-height:1.45; box-shadow:0 1px 2px rgba(20,30,50,.04); }
   .suggestion-meta { font-size:11px; color:var(--muted); margin-top:8px; }
+
+  .hist-item { display:flex; justify-content:space-between; padding:12px 14px; background:#fff;
+               border-radius:10px; margin-bottom:6px; border:1px solid var(--border); font-size:13px; }
+  .hist-desc { flex:1; }
+  .hist-amount { font-weight:600; white-space:nowrap; margin-left:10px; }
+  .hist-amount.income { color:var(--green); }
+  .hist-amount.expense { color:var(--red); }
+  .hist-date { font-size:11px; color:var(--muted); display:block; margin-top:2px; }
 
   .modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.5);
                    backdrop-filter:blur(2px); z-index:100; align-items:center; justify-content:center; padding:20px; }
@@ -105,8 +118,6 @@
   .expense-item-total { font-weight:600; }
 
   .alert { padding:12px 14px; border-radius:10px; font-size:13px; margin-bottom:14px; }
-  .alert-success { background:#dcfce7; color:#166534; }
-  .alert-info { background:#dbeafe; color:#1e40af; }
   .alert-error { background:#fee2e2; color:#991b1b; }
 
   .loader { text-align:center; padding:30px; color:var(--muted); font-size:13px; }
@@ -137,6 +148,7 @@
     </div>
     <div class="header-user">
       <b id="user-fio">—</b>
+      <button class="refresh-btn" id="btn-refresh" title="Обновить">🔄</button>
       <a href="#" id="btn-logout">Выйти</a>
     </div>
   </div>
@@ -151,6 +163,9 @@
   <button class="btn btn-red" id="btn-skip">❌ НЕ СДАЮ</button>
   <button class="btn btn-gray" id="btn-expenses">📋 Посмотреть расходы</button>
   <button class="btn btn-gray" id="btn-suggest">💡 Предложить</button>
+
+  <div class="section-title">Моя история</div>
+  <div id="my-history"><div class="loader">Загрузка…</div></div>
 
   <div class="section-title">Предложения сообщества</div>
   <div id="suggestions-list"><div class="loader">Загрузка…</div></div>
@@ -215,10 +230,8 @@
 (function(){
   'use strict';
 
-  // ====== НАСТРОЙКИ SUPABASE ======
   const SUPABASE_URL = 'https://cmybjfrvabcumkolsxmj.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNteWJqZnJ2YWJjdW1rb2xzeG1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMjEwNDUsImV4cCI6MjEwNDg5NzA0NX0.rj5ld_t0mRXIar9TAnq4yW5TSLxZGR0kdSLaROFkhYo';
-  // =================================
 
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -263,7 +276,7 @@
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('main-screen').style.display = 'block';
     document.getElementById('user-fio').textContent = currentUser.fio;
-    await Promise.all([loadBalance(), loadSuggestions()]);
+    await Promise.all([loadBalance(), loadSuggestions(), loadMyHistory()]);
   }
 
   async function loadBalance() {
@@ -280,6 +293,68 @@
     document.getElementById('user-balance').textContent = bal.toLocaleString('ru-RU') + ' ₽';
     document.getElementById('balance-sub').textContent =
       'Сдано: ' + income.toLocaleString('ru-RU') + ' ₽ · Расходы: ' + spent.toLocaleString('ru-RU') + ' ₽';
+  }
+
+  // ===== МОЯ ИСТОРИЯ =====
+  async function loadMyHistory() {
+    const box = document.getElementById('my-history');
+    box.innerHTML = '<div class="loader">Загрузка…</div>';
+
+    const [conf, months, expenses] = await Promise.all([
+      db.from('config').select('monthly_fee').eq('id',1).maybeSingle(),
+      db.from('months').select('*').eq('user_id', currentUser.id),
+      db.from('expenses').select('*').order('date', { ascending:false })
+    ]);
+
+    const fee = (conf.data && conf.data.monthly_fee) || 1000;
+    const year = new Date().getFullYear();
+    const items = [];
+
+    // мои взносы
+    (months.data || []).forEach(function(m){
+      if (m.year !== year) return;
+      let label = '';
+      if (m.status === 'paid') label = 'Взнос за ' + MONTHS[m.month];
+      else if (m.status === 'otp') label = 'Отпуск — ' + MONTHS[m.month];
+      else if (m.status === 'kmd') label = 'Командировка — ' + MONTHS[m.month];
+      else return;
+      items.push({
+        date: year + '-' + String(m.month+1).padStart(2,'0') + '-15',
+        desc: label,
+        amount: m.status === 'paid' ? -fee : 0,
+        kind: m.status === 'paid' ? 'expense' : 'neutral'
+      });
+    });
+
+    // расходы клуба (показываем всем — это публичные данные)
+    (expenses.data || []).forEach(function(e){
+      items.push({
+        date: e.date,
+        desc: e.name + ' ×' + e.qty,
+        amount: (Number(e.qty)||0)*(Number(e.price)||0),
+        kind: 'expense'
+      });
+    });
+
+    items.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+
+    // Отфильтруем: показываем только мои взносы + общие расходы, чтобы не путать
+    // На самом деле для клиента — оставим только его взносы + расходы клуба
+    if (!items.length) {
+      box.innerHTML = '<div class="empty">Пока нет записей</div>';
+      return;
+    }
+
+    box.innerHTML = items.slice(0, 50).map(function(it){
+      const color = it.kind === 'expense' ? 'expense' : 'income';
+      const sign = it.amount >= 0 ? '+' : '−';
+      const amountHtml = it.amount === 0 ? '—' : (sign + Math.abs(it.amount).toLocaleString('ru-RU') + ' ₽');
+      return '<div class="hist-item">' +
+        '<div class="hist-desc">' + escapeHtml(it.desc) +
+        '<span class="hist-date">' + (it.date || '') + '</span></div>' +
+        '<div class="hist-amount ' + color + '">' + amountHtml + '</div>' +
+        '</div>';
+    }).join('');
   }
 
   function renderMonthSelector(containerId) {
@@ -350,11 +425,11 @@
       });
       if (ins.error) throw ins.error;
 
-      alert('Чек отправлен на проверку ✓\nПосле одобрения администратором месяц будет отмечен как «Сдал».');
+      alert('Чек отправлен на проверку ✓');
       document.getElementById('modal-pay').classList.remove('active');
     } catch (err) {
       console.error(err);
-      alert('Ошибка отправки: ' + (err.message || 'неизвестная'));
+      alert('Ошибка: ' + (err.message || 'неизвестная'));
     } finally {
       btn.disabled = false; btn.textContent = 'Отправить';
     }
@@ -431,7 +506,7 @@
   document.getElementById('btn-submit-suggest').addEventListener('click', async function(){
     const text = document.getElementById('suggest-text').value.trim();
     if (!text) { alert('Введите текст'); return; }
-    if (text.length > 1000) { alert('Слишком длинное сообщение (макс 1000 символов)'); return; }
+    if (text.length > 1000) { alert('Слишком длинное сообщение'); return; }
 
     const res = await db.from('suggestions').insert({
       user_id: currentUser.id,
@@ -471,6 +546,13 @@
     document.getElementById('auth-code').value = '';
   });
 
+  document.getElementById('btn-refresh').addEventListener('click', async function(){
+    const btn = this;
+    btn.disabled = true;
+    await loadMain();
+    btn.disabled = false;
+  });
+
   document.querySelectorAll('[data-close-modal]').forEach(function(btn){
     btn.addEventListener('click', function(e){ e.target.closest('.modal-overlay').classList.remove('active'); });
   });
@@ -482,6 +564,10 @@
     return String(s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('../service-worker.js').catch(function(){});
   }
 })();
 </script>
