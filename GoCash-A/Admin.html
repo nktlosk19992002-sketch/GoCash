@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoCash</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f4f6fa; --card:#fff; --text:#1a2233; --muted:#6b7690; --border:#e6eaf0;
+    --primary:#3b82f6; --primary-dark:#2563eb; --green:#22c55e; --red:#ef4444;
+    --yellow:#f59e0b; --blue:#3b82f6; --radius:14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text);
+         min-height:100vh; font-size:14px; -webkit-font-smoothing:antialiased; }
+  .container { max-width:480px; margin:0 auto; padding:20px; }
+
+  .auth-card { background:#fff; border-radius:var(--radius); padding:28px; margin-top:60px;
+               box-shadow:0 4px 20px rgba(0,0,0,.06); }
+  .auth-logo { text-align:center; margin-bottom:22px; }
+  .auth-logo-icon { width:56px; height:56px; border-radius:14px; margin:0 auto 10px;
+                    background:linear-gradient(135deg,#22c55e,#16a34a);
+                    display:flex; align-items:center; justify-content:center; font-size:28px; }
+  .auth-logo-text { font-size:22px; font-weight:700; }
+  .auth-logo-text span { color:#22c55e; }
+  .auth-card h1 { font-size:16px; font-weight:500; color:var(--muted); text-align:center; margin-bottom:20px; }
+  .auth-card input { width:100%; padding:12px 14px; border:1px solid var(--border); border-radius:10px;
+                     margin-bottom:12px; font-size:15px; font-family:inherit; outline:none; }
+  .auth-card input:focus { border-color:var(--primary); }
+  .auth-error { color:var(--red); font-size:13px; text-align:center; margin-top:10px; min-height:18px; }
+
+  .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .header-logo { font-size:18px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .header-logo-icon { width:28px; height:28px; border-radius:8px;
+                      background:linear-gradient(135deg,#22c55e,#16a34a);
+                      display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .header-logo-text span { color:#22c55e; }
+  .header-user { font-size:12px; color:var(--muted); text-align:right; }
+  .header-user b { display:block; font-size:13px; color:var(--text); font-weight:600; }
+  .header-user a { color:var(--muted); text-decoration:none; }
+  .header-user a:hover { color:var(--red); }
+
+  .balance-card { background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff;
+                  border-radius:var(--radius); padding:22px; text-align:center; margin-bottom:20px;
+                  box-shadow:0 6px 20px rgba(15,23,42,.2); }
+  .balance-label { font-size:11px; opacity:.7; text-transform:uppercase; letter-spacing:.5px; }
+  .balance-value { font-size:32px; font-weight:700; margin-top:6px; letter-spacing:-.5px; }
+  .balance-sub { font-size:11px; opacity:.7; margin-top:4px; }
+
+  .btn { width:100%; padding:14px; border:none; border-radius:12px; font-size:15px; font-weight:600;
+         cursor:pointer; font-family:inherit; transition:all .15s; margin-bottom:10px;
+         display:flex; align-items:center; justify-content:center; gap:8px; }
+  .btn:active { transform:scale(.98); }
+  .btn-green { background:var(--green); color:#fff; }
+  .btn-green:hover { filter:brightness(.95); }
+  .btn-red { background:var(--red); color:#fff; }
+  .btn-red:hover { filter:brightness(.95); }
+  .btn-gray { background:#fff; color:var(--text); border:1px solid var(--border); }
+  .btn-gray:hover { background:#f8fafc; }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-primary:hover { background:var(--primary-dark); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  .section-title { font-size:15px; font-weight:600; margin:24px 0 12px; }
+
+  .suggestion { background:#fff; border-radius:12px; padding:14px 16px; margin-bottom:8px;
+                border:1px solid var(--border); font-size:14px; line-height:1.45; box-shadow:0 1px 2px rgba(20,30,50,.04); }
+  .suggestion-meta { font-size:11px; color:var(--muted); margin-top:8px; }
+
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.5);
+                   backdrop-filter:blur(2px); z-index:100; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.active { display:flex; }
+  .modal { background:#fff; border-radius:var(--radius); padding:22px; width:100%; max-width:440px;
+           max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(15,23,42,.25); }
+  .modal h3 { font-size:17px; font-weight:600; margin-bottom:16px; }
+  .modal label { display:block; font-size:12px; color:var(--muted); font-weight:500; margin-bottom:8px; }
+  .modal input, .modal select, .modal textarea {
+    width:100%; padding:12px; border:1px solid var(--border); border-radius:10px;
+    margin-bottom:14px; font-size:14px; font-family:inherit; outline:none; resize:vertical;
+  }
+  .modal input:focus, .modal select:focus, .modal textarea:focus { border-color:var(--primary); }
+  .modal textarea { min-height:120px; }
+
+  .month-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+  .month-btn { padding:11px 4px; border:1px solid var(--border); border-radius:10px;
+               background:#fff; cursor:pointer; font-size:13px; font-weight:500; font-family:inherit;
+               transition:all .15s; }
+  .month-btn:hover:not(:disabled) { border-color:var(--primary); }
+  .month-btn.selected { background:var(--primary); color:#fff; border-color:var(--primary); }
+  .month-btn:disabled { opacity:.35; cursor:not-allowed; }
+
+  .file-input-wrap { position:relative; margin-bottom:14px; }
+  .file-input-wrap input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .file-input-label { padding:12px; border:2px dashed var(--border); border-radius:10px; text-align:center;
+                      font-size:13px; color:var(--muted); background:#fafbfd; transition:all .15s; }
+  .file-input-wrap:hover .file-input-label { border-color:var(--primary); color:var(--primary); }
+  .file-preview { max-width:100%; border-radius:10px; margin-bottom:12px; display:none; }
+
+  .expense-item { padding:12px 0; border-bottom:1px solid var(--border); font-size:14px;
+                  display:flex; justify-content:space-between; gap:10px; }
+  .expense-item:last-child { border-bottom:none; }
+  .expense-item-total { font-weight:600; }
+
+  .alert { padding:12px 14px; border-radius:10px; font-size:13px; margin-bottom:14px; }
+  .alert-success { background:#dcfce7; color:#166534; }
+  .alert-info { background:#dbeafe; color:#1e40af; }
+  .alert-error { background:#fee2e2; color:#991b1b; }
+
+  .loader { text-align:center; padding:30px; color:var(--muted); font-size:13px; }
+  .empty { text-align:center; padding:20px; color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+
+<div class="container" id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">💰</div>
+      <div class="auth-logo-text">Go<span>Cash</span></div>
+    </div>
+    <h1>Вход в личный кабинет</h1>
+    <input type="text" id="auth-name" placeholder="ФИО" autocomplete="off">
+    <input type="text" id="auth-code" placeholder="Код доступа" autocomplete="off">
+    <button class="btn btn-primary" id="btn-login">Войти</button>
+    <p class="auth-error" id="auth-error"></p>
+  </div>
+</div>
+
+<div class="container" id="main-screen" style="display:none;">
+  <div class="header">
+    <div class="header-logo">
+      <div class="header-logo-icon">💰</div>
+      <div class="header-logo-text">Go<span>Cash</span></div>
+    </div>
+    <div class="header-user">
+      <b id="user-fio">—</b>
+      <a href="#" id="btn-logout">Выйти</a>
+    </div>
+  </div>
+
+  <div class="balance-card">
+    <div class="balance-label">Общий баланс</div>
+    <div class="balance-value" id="user-balance">— ₽</div>
+    <div class="balance-sub" id="balance-sub"></div>
+  </div>
+
+  <button class="btn btn-green" id="btn-pay">✅ СДАЛ</button>
+  <button class="btn btn-red" id="btn-skip">❌ НЕ СДАЮ</button>
+  <button class="btn btn-gray" id="btn-expenses">📋 Посмотреть расходы</button>
+  <button class="btn btn-gray" id="btn-suggest">💡 Предложить</button>
+
+  <div class="section-title">Предложения сообщества</div>
+  <div id="suggestions-list"><div class="loader">Загрузка…</div></div>
+</div>
+
+<div class="modal-overlay" id="modal-pay">
+  <div class="modal">
+    <h3>Оплата взноса</h3>
+    <label>Выберите месяц</label>
+    <div class="month-grid" id="pay-months"></div>
+    <label>Скриншот чека (обязательно)</label>
+    <div class="file-input-wrap">
+      <input type="file" id="pay-receipt" accept="image/*">
+      <div class="file-input-label" id="pay-file-label">📎 Нажмите, чтобы выбрать файл</div>
+    </div>
+    <img id="pay-preview" class="file-preview">
+    <button class="btn btn-green" id="btn-submit-pay">Отправить</button>
+    <button class="btn btn-gray" data-close-modal>Отмена</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-skip">
+  <div class="modal">
+    <h3>Причина пропуска</h3>
+    <label>Выберите месяц</label>
+    <div class="month-grid" id="skip-months"></div>
+    <label>Причина</label>
+    <select id="skip-reason">
+      <option value="otp">Отпуск (Отп)</option>
+      <option value="kmd">Командировка (Кмд)</option>
+    </select>
+    <button class="btn btn-red" id="btn-submit-skip">Отправить</button>
+    <button class="btn btn-gray" data-close-modal>Отмена</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-expenses">
+  <div class="modal">
+    <h3>Расходы за месяц</h3>
+    <label>Месяц</label>
+    <select id="exp-month-select"></select>
+    <div id="exp-list" style="margin-top:6px;"><div class="loader">Загрузка…</div></div>
+    <button class="btn btn-gray" data-close-modal style="margin-top:14px;">Закрыть</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-suggest">
+  <div class="modal">
+    <h3>Предложить</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+      Ваше предложение будет отправлено администратору. В общем списке оно отображается анонимно.
+    </p>
+    <label>Ваше предложение</label>
+    <textarea id="suggest-text" placeholder="Напишите вашу идею..."></textarea>
+    <button class="btn btn-primary" id="btn-submit-suggest">Отправить</button>
+    <button class="btn btn-gray" data-close-modal>Отмена</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  'use strict';
+
+  const SUPABASE_URL = 'https://xpaqczxqukuzfwmnimzsx.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwYXFjenhxa3V6ZndtbmltenN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5Njg4NDcsImV4cCI6MjEwNDU0NDg0N30.hH62d6aCsgBchg4MVPey714O3-FR9bNaqnsm_T32zAk';
+
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+  let currentUser = null;
+  let selectedMonth = null;
+
+  // ===== Авторизация =====
+  document.getElementById('btn-login').addEventListener('click', async function(){
+    const fio = document.getElementById('auth-name').value.trim();
+    const code = document.getElementById('auth-code').value.trim();
+    const errEl = document.getElementById('auth-error');
+    errEl.textContent = '';
+
+    if (!fio || !code) { errEl.textContent = 'Заполните все поля'; return; }
+
+    const res = await db.from('users').select('*').eq('fio', fio).eq('code', code).maybeSingle();
+
+    if (res.error || !res.data) {
+      errEl.textContent = 'Неверное имя или код доступа';
+      console.error(res.error);
+      return;
+    }
+
+    currentUser = res.data;
+    try { sessionStorage.setItem('gocash_user', JSON.stringify(res.data)); } catch(e){}
+    await loadMain();
+  });
+
+  // Авто-вход
+  (async function(){
+    let saved = null;
+    try { saved = sessionStorage.getItem('gocash_user'); } catch(e){}
+    if (saved) {
+      try {
+        currentUser = JSON.parse(saved);
+        await loadMain();
+      } catch(e){}
+    }
+  })();
+
+  async function loadMain() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('main-screen').style.display = 'block';
+    document.getElementById('user-fio').textContent = currentUser.fio;
+    await Promise.all([loadBalance(), loadSuggestions()]);
+  }
+
+  async function loadBalance() {
+    const [conf, months, expenses] = await Promise.all([
+      db.from('config').select('monthly_fee').eq('id',1).single(),
+      db.from('months').select('status'),
+      db.from('expenses').select('qty, price')
+    ]);
+    const fee = (conf.data && conf.data.monthly_fee) || 1000;
+    const income = (months.data||[]).filter(function(m){ return m.status === 'paid'; }).length * fee;
+    const spent = (expenses.data||[]).reduce(function(s,e){ return s + (Number(e.qty)||0)*(Number(e.price)||0); }, 0);
+    const bal = income - spent;
+
+    document.getElementById('user-balance').textContent = bal.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('balance-sub').textContent =
+      'Сдано: ' + income.toLocaleString('ru-RU') + ' ₽ · Расходы: ' + spent.toLocaleString('ru-RU') + ' ₽';
+  }
+
+  function renderMonthSelector(containerId) {
+    const grid = document.getElementById(containerId);
+    grid.innerHTML = '';
+    const cur = new Date().getMonth();
+    selectedMonth = null;
+    MONTHS.forEach(function(m, i){
+      const b = document.createElement('button');
+      b.className = 'month-btn';
+      b.textContent = m;
+      if (i > cur) { b.disabled = true; b.title = 'Будущий месяц'; }
+      b.addEventListener('click', function(){
+        grid.querySelectorAll('.month-btn').forEach(function(x){ x.classList.remove('selected'); });
+        b.classList.add('selected');
+        selectedMonth = i;
+      });
+      grid.appendChild(b);
+    });
+  }
+
+  // ===== СДАЛ =====
+  document.getElementById('btn-pay').addEventListener('click', function(){
+    renderMonthSelector('pay-months');
+    document.getElementById('pay-receipt').value = '';
+    document.getElementById('pay-file-label').textContent = '📎 Нажмите, чтобы выбрать файл';
+    const prev = document.getElementById('pay-preview');
+    prev.style.display = 'none';
+    prev.src = '';
+    document.getElementById('modal-pay').classList.add('active');
+  });
+
+  document.getElementById('pay-receipt').addEventListener('change', function(e){
+    const f = e.target.files[0];
+    if (!f) return;
+    document.getElementById('pay-file-label').textContent = '📎 ' + f.name;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const img = document.getElementById('pay-preview');
+      img.src = ev.target.result;
+      img.style.display = 'block';
+    };
+    reader.readAsDataURL(f);
+  });
+
+  document.getElementById('btn-submit-pay').addEventListener('click', async function(){
+    if (selectedMonth === null) { alert('Выберите месяц'); return; }
+    const file = document.getElementById('pay-receipt').files[0];
+    if (!file) { alert('Загрузите скриншот чека'); return; }
+
+    const btn = document.getElementById('btn-submit-pay');
+    btn.disabled = true; btn.textContent = 'Отправляем…';
+
+    try {
+      const ext = file.name.split('.').pop();
+      const path = currentUser.id + '/' + Date.now() + '.' + ext;
+      const up = await db.storage.from('receipts').upload(path, file);
+      if (up.error) throw up.error;
+
+      const urlData = db.storage.from('receipts').getPublicUrl(path);
+
+      const ins = await db.from('payments').insert({
+        user_id: currentUser.id,
+        year: new Date().getFullYear(),
+        month: selectedMonth,
+        status: 'pending',
+        receipt_url: urlData.data.publicUrl,
+        receipt_path: path
+      });
+      if (ins.error) throw ins.error;
+
+      alert('Чек отправлен на проверку ✓\nПосле одобрения администратором месяц будет отмечен как «Сдал».');
+      document.getElementById('modal-pay').classList.remove('active');
+    } catch (err) {
+      console.error(err);
+      alert('Ошибка отправки: ' + (err.message || 'неизвестная'));
+    } finally {
+      btn.disabled = false; btn.textContent = 'Отправить';
+    }
+  });
+
+  // ===== НЕ СДАЮ =====
+  document.getElementById('btn-skip').addEventListener('click', function(){
+    renderMonthSelector('skip-months');
+    document.getElementById('modal-skip').classList.add('active');
+  });
+
+  document.getElementById('btn-submit-skip').addEventListener('click', async function(){
+    if (selectedMonth === null) { alert('Выберите месяц'); return; }
+    const reason = document.getElementById('skip-reason').value;
+
+    const res = await db.from('payments').insert({
+      user_id: currentUser.id,
+      year: new Date().getFullYear(),
+      month: selectedMonth,
+      status: 'reason',
+      reason: reason
+    });
+    if (res.error) { alert('Ошибка: ' + res.error.message); return; }
+
+    alert('Причина отправлена ✓');
+    document.getElementById('modal-skip').classList.remove('active');
+  });
+
+  // ===== РАСХОДЫ =====
+  document.getElementById('btn-expenses').addEventListener('click', async function(){
+    const sel = document.getElementById('exp-month-select');
+    sel.innerHTML = '';
+    MONTHS.forEach(function(m, i){
+      const o = document.createElement('option');
+      o.value = i; o.textContent = m;
+      sel.appendChild(o);
+    });
+    sel.value = new Date().getMonth();
+    sel.onchange = function(){ loadExpenses(Number(sel.value)); };
+    await loadExpenses(new Date().getMonth());
+    document.getElementById('modal-expenses').classList.add('active');
+  });
+
+  async function loadExpenses(monthIndex) {
+    const list = document.getElementById('exp-list');
+    list.innerHTML = '<div class="loader">Загрузка…</div>';
+
+    const year = new Date().getFullYear();
+    const start = year + '-' + String(monthIndex+1).padStart(2,'0') + '-01';
+    const end = new Date(year, monthIndex+1, 0).toISOString().slice(0,10);
+
+    const res = await db.from('expenses').select('*').gte('date', start).lte('date', end).order('date', { ascending: true });
+
+    if (res.error) { list.innerHTML = '<div class="alert alert-error">Ошибка загрузки</div>'; return; }
+    if (!res.data || !res.data.length) {
+      list.innerHTML = '<div class="empty">Расходов за этот месяц нет</div>';
+      return;
+    }
+
+    const total = res.data.reduce(function(s,e){ return s + (Number(e.qty)||0)*(Number(e.price)||0); }, 0);
+    list.innerHTML = res.data.map(function(e){
+      return '<div class="expense-item">' +
+        '<span>' + escapeHtml(e.name) + ' ×' + e.qty + '</span>' +
+        '<span class="expense-item-total">' + ((e.qty||0)*(e.price||0)).toLocaleString('ru-RU') + ' ₽</span>' +
+        '</div>';
+    }).join('') +
+      '<div class="expense-item" style="border-top:2px solid var(--border);padding-top:14px;font-weight:700;">' +
+      '<span>Итого</span><span>' + total.toLocaleString('ru-RU') + ' ₽</span></div>';
+  }
+
+  // ===== ПРЕДЛОЖЕНИЯ =====
+  document.getElementById('btn-suggest').addEventListener('click', function(){
+    document.getElementById('suggest-text').value = '';
+    document.getElementById('modal-suggest').classList.add('active');
+  });
+
+  document.getElementById('btn-submit-suggest').addEventListener('click', async function(){
+    const text = document.getElementById('suggest-text').value.trim();
+    if (!text) { alert('Введите текст'); return; }
+    if (text.length > 1000) { alert('Слишком длинное сообщение (макс 1000 символов)'); return; }
+
+    const res = await db.from('suggestions').insert({
+      user_id: currentUser.id,
+      text: text,
+      anonymous: true
+    });
+    if (res.error) { alert('Ошибка: ' + res.error.message); return; }
+
+    document.getElementById('modal-suggest').classList.remove('active');
+    await loadSuggestions();
+    alert('Спасибо! Предложение отправлено ✓');
+  });
+
+  async function loadSuggestions() {
+    const list = document.getElementById('suggestions-list');
+    const res = await db.from('suggestions').select('id, text, created_at').order('created_at', { ascending: false }).limit(30);
+
+    if (res.error) { list.innerHTML = '<div class="alert alert-error">Не удалось загрузить</div>'; return; }
+    if (!res.data || !res.data.length) {
+      list.innerHTML = '<div class="empty">Пока нет предложений</div>';
+      return;
+    }
+    list.innerHTML = res.data.map(function(s){
+      return '<div class="suggestion">' + escapeHtml(s.text) +
+        '<div class="suggestion-meta">' + new Date(s.created_at).toLocaleString('ru-RU') + '</div></div>';
+    }).join('');
+  }
+
+  // ===== ВЫХОД =====
+  document.getElementById('btn-logout').addEventListener('click', function(e){
+    e.preventDefault();
+    if (!confirm('Выйти из аккаунта?')) return;
+    try { sessionStorage.removeItem('gocash_user'); } catch(e){}
+    currentUser = null;
+    document.getElementById('auth-screen').style.display = 'block';
+    document.getElementById('main-screen').style.display = 'none';
+    document.getElementById('auth-name').value = '';
+    document.getElementById('auth-code').value = '';
+  });
+
+  // ===== МОДАЛКИ =====
+  document.querySelectorAll('[data-close-modal]').forEach(function(btn){
+    btn.addEventListener('click', function(e){ e.target.closest('.modal-overlay').classList.remove('active'); });
+  });
+  document.querySelectorAll('.modal-overlay').forEach(function(ov){
+    ov.addEventListener('click', function(e){ if (e.target === ov) ov.classList.remove('active'); });
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+})();
+</script>
+</body>
+</html>
