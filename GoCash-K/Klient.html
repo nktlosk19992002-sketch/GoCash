@@ -156,7 +156,6 @@
 </head>
 <body>
 
-<!-- ЭКРАН ВХОДА -->
 <div class="container" id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">
@@ -171,7 +170,6 @@
   </div>
 </div>
 
-<!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="container" id="main-screen" style="display:none;">
   <div class="header">
     <div class="header-logo">
@@ -208,7 +206,6 @@
   <div id="suggestions-list"><div class="loader">Загрузка…</div></div>
 </div>
 
-<!-- ЭКРАН АДМИНА -->
 <div class="container" id="admin-screen" style="display:none;max-width:600px;">
   <div class="header">
     <div class="header-logo">
@@ -228,7 +225,6 @@
   <div id="unpaid-list"></div>
 </div>
 
-<!-- МОДАЛКИ -->
 <div class="modal-overlay" id="modal-pay">
   <div class="modal">
     <h3>Оплата взноса</h3>
@@ -337,6 +333,7 @@
   let myMonths = Array(12).fill(null);
   let pendingBoughtReceipt = null;
 
+  // ===== Утилиты =====
   function getSaratovNow() {
     const fmt = new Intl.DateTimeFormat('ru-RU', {
       timeZone:'Europe/Saratov', year:'numeric', month:'numeric', day:'numeric'
@@ -345,6 +342,14 @@
     return { year:+o.year, month:+o.month-1, day:+o.day };
   }
   function isCurrentMonthBillable() { return getSaratovNow().day >= 15; }
+
+  // ВАЖНО: приводим id к числу
+  function uid() {
+    if (!currentUser) return null;
+    const n = Number(currentUser.id);
+    return isNaN(n) ? currentUser.id : n;
+  }
+
   function effectiveMyStatus(mIdx) {
     const s = myMonths[mIdx];
     if (s) return s;
@@ -354,16 +359,32 @@
     return null;
   }
 
+  // ===== Загрузка моих статусов =====
   async function loadMyMonths() {
     const year = getSaratovNow().year;
-    const res = await db.from('months').select('*').eq('user_id', currentUser.id).eq('year', year);
+    const userId = uid();
+
+    console.log('🔵 loadMyMonths: user_id =', userId, '(', typeof userId, '), year =', year);
+
+    const res = await db.from('months').select('*').eq('user_id', userId).eq('year', year);
+
+    if (res.error) {
+      console.error('❌ Ошибка загрузки месяцев:', res.error);
+      myMonths = Array(12).fill(null);
+      return;
+    }
+
+    console.log('✅ Получены месяцы:', res.data);
+
     myMonths = Array(12).fill(null);
     (res.data || []).forEach(function(row){
       if (row.month >= 0 && row.month <= 11) myMonths[row.month] = row.status;
     });
+
+    console.log('📅 myMonths после обработки:', myMonths);
   }
 
-  // ===== ВХОД =====
+  // ===== Вход =====
   document.getElementById('btn-login').addEventListener('click', async function(){
     const fio = document.getElementById('auth-name').value.trim();
     const code = document.getElementById('auth-code').value.trim();
@@ -371,26 +392,30 @@
     errEl.textContent = '';
     if (!fio || !code) { errEl.textContent = 'Заполните все поля'; return; }
 
-    // 1. Проверяем админа
+    // 1. Админ?
     const adminRes = await db.from('admins').select('*').eq('fio', fio).eq('code', code).maybeSingle();
     if (adminRes.data) {
       currentUser = adminRes.data;
       isAdmin = true;
     } else {
-      // 2. Проверяем обычного пользователя
+      // 2. Обычный пользователь
       const res = await db.from('users').select('*').eq('fio', fio).eq('code', code).maybeSingle();
       if (res.error || !res.data) {
         errEl.textContent = 'Неверное имя или код доступа';
+        console.error(res.error);
         return;
       }
       currentUser = res.data;
       isAdmin = false;
     }
 
+    console.log('👤 Вошёл:', currentUser.fio, 'id =', currentUser.id, '(', typeof currentUser.id, ')');
+
     try { sessionStorage.setItem('gocash_user', JSON.stringify({ user: currentUser, isAdmin: isAdmin })); } catch(e){}
     await loadMain();
   });
 
+  // Авто-вход
   (async function(){
     let saved = null;
     try { saved = sessionStorage.getItem('gocash_user'); } catch(e){}
@@ -407,6 +432,7 @@
   async function loadMain() {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('main-screen').style.display = 'block';
+    document.getElementById('admin-screen').style.display = 'none';
     document.getElementById('user-fio').textContent = currentUser.fio;
     document.getElementById('admin-tag').style.display = isAdmin ? 'inline-block' : 'none';
     document.getElementById('btn-admin').style.display = isAdmin ? 'inline-block' : 'none';
@@ -415,6 +441,7 @@
     await loadMyHistory();
   }
 
+  // ===== Баланс =====
   async function loadBalance() {
     const [conf, months, expenses] = await Promise.all([
       db.from('config').select('monthly_fee').eq('id',1).maybeSingle(),
@@ -430,12 +457,13 @@
       'Сдано: ' + income.toLocaleString('ru-RU') + ' ₽ · Расходы: ' + spent.toLocaleString('ru-RU') + ' ₽';
   }
 
+  // ===== Моя история =====
   async function loadMyHistory() {
     const box = document.getElementById('my-history');
     box.innerHTML = '<div class="loader">Загрузка…</div>';
     const [conf, months, expenses] = await Promise.all([
       db.from('config').select('monthly_fee').eq('id',1).maybeSingle(),
-      db.from('months').select('*').eq('user_id', currentUser.id),
+      db.from('months').select('*').eq('user_id', uid()),
       db.from('expenses').select('*').order('date', { ascending:false })
     ]);
     const fee = (conf.data && conf.data.monthly_fee) || 1000;
@@ -477,11 +505,15 @@
     }).join('');
   }
 
+  // ===== Выбор месяца =====
   function renderMonthSelector(containerId) {
     const grid = document.getElementById(containerId);
     grid.innerHTML = '';
     const now = getSaratovNow();
     selectedMonth = null;
+
+    console.log('🎨 renderMonthSelector:', containerId, 'myMonths =', myMonths);
+
     MONTHS.forEach(function(m, i){
       const b = document.createElement('button');
       b.className = 'month-btn';
@@ -549,12 +581,12 @@
     const btn = this; btn.disabled = true; btn.textContent = 'Отправляем…';
     try {
       const ext = file.name.split('.').pop();
-      const path = currentUser.id + '/' + Date.now() + '.' + ext;
+      const path = uid() + '/' + Date.now() + '.' + ext;
       const up = await db.storage.from('receipts').upload(path, file);
       if (up.error) throw up.error;
       const urlData = db.storage.from('receipts').getPublicUrl(path);
       const ins = await db.from('payments').insert({
-        user_id: currentUser.id,
+        user_id: uid(),
         year: getSaratovNow().year,
         month: selectedMonth,
         status: 'pending',
@@ -579,17 +611,25 @@
   document.getElementById('btn-submit-skip').addEventListener('click', async function(){
     if (selectedMonth === null) { alert('Выберите месяц'); return; }
     const reason = document.getElementById('skip-reason').value;
-    await db.from('payments').insert({
-      user_id: currentUser.id,
-      year: getSaratovNow().year,
+    const year = getSaratovNow().year;
+
+    // 1. Заявка
+    const ins = await db.from('payments').insert({
+      user_id: uid(),
+      year: year,
       month: selectedMonth,
       status: 'reason',
       reason: reason
     });
-    await db.from('months').upsert(
-      { user_id: currentUser.id, year: getSaratovNow().year, month: selectedMonth, status: reason },
+    if (ins.error) { alert('Ошибка: ' + ins.error.message); return; }
+
+    // 2. Сразу пишем в months
+    const up = await db.from('months').upsert(
+      { user_id: uid(), year: year, month: selectedMonth, status: reason },
       { onConflict: 'user_id,year,month' }
     );
+    if (up.error) { alert('Ошибка месяцы: ' + up.error.message); return; }
+
     await loadMyMonths();
     alert('Причина отправлена ✓');
     document.getElementById('modal-skip').classList.remove('active');
@@ -630,12 +670,12 @@
     const btn = this; btn.disabled = true; btn.textContent = 'Отправляем…';
     try {
       const ext = pendingBoughtReceipt.name.split('.').pop();
-      const path = currentUser.id + '/' + Date.now() + '.' + ext;
+      const path = uid() + '/' + Date.now() + '.' + ext;
       const up = await db.storage.from('expense-receipts').upload(path, pendingBoughtReceipt);
       if (up.error) throw up.error;
       const urlData = db.storage.from('expense-receipts').getPublicUrl(path);
       const ins = await db.from('expense_requests').insert({
-        user_id: currentUser.id,
+        user_id: uid(),
         name: name,
         price: price,
         date: new Date().toISOString().slice(0,10),
@@ -697,7 +737,7 @@
     if (!text) { alert('Введите текст'); return; }
     if (text.length > 1000) { alert('Слишком длинное сообщение'); return; }
     const res = await db.from('suggestions').insert({
-      user_id: currentUser.id, text: text, anonymous: true
+      user_id: uid(), text: text, anonymous: true
     });
     if (res.error) { alert('Ошибка: ' + res.error.message); return; }
     document.getElementById('modal-suggest').classList.remove('active');
@@ -742,7 +782,6 @@
       if (statusByUser[m.user_id]) statusByUser[m.user_id][m.month] = m.status;
     });
 
-    // Заполняем селекты месяцев
     const nowMonth = getSaratovNow().month;
     [document.getElementById('paid-month-select'), document.getElementById('unpaid-month-select')].forEach(function(sel){
       sel.innerHTML = '';
