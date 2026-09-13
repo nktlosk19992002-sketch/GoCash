@@ -47,7 +47,8 @@
          font-family:inherit; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
   .btn-primary { background:var(--primary); color:#fff; } .btn-primary:hover { background:var(--primary-dark); }
   .btn-secondary { background:#eef1f6; color:var(--text); } .btn-secondary:hover { background:#e2e6ee; }
-  .btn-success { background:var(--green); color:#fff; } .btn-danger { background:var(--red); color:#fff; }
+  .btn-success { background:var(--green); color:#fff; } .btn-success:hover { filter:brightness(.95); }
+  .btn-danger { background:var(--red); color:#fff; }
   .btn-icon { background:#eef1f6; color:var(--text); padding:6px 10px; border:none; border-radius:6px;
               cursor:pointer; font-size:12px; font-weight:500; font-family:inherit; }
   .btn-icon:hover { background:#e2e6ee; }
@@ -260,6 +261,7 @@
     <h2>Пользователи</h2>
     <div class="expenses-toolbar">
       <button class="btn btn-primary" id="btn-add-user">+ Добавить пользователя</button>
+      <button class="btn btn-success" id="btn-import-excel">📊 Загрузить Excel</button>
       <button class="btn btn-secondary" id="btn-edit-mode">Редактировать</button>
     </div>
     <table>
@@ -447,6 +449,43 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-import-excel">
+  <div class="modal" style="max-width:640px;">
+    <h3>📊 Импорт пользователей из Excel</h3>
+
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5;">
+      Формат файла: <b>столбец 1</b> — ФИО, <b>столбец 2</b> — код доступа.
+      Первая строка считается заголовком и пропускается.
+    </p>
+
+    <div class="file-input-wrap" style="margin-bottom:16px;">
+      <input type="file" id="excel-file" accept=".xlsx,.xls,.csv">
+      <div class="file-input-label" id="excel-file-label">📎 Выберите .xlsx / .xls / .csv</div>
+    </div>
+
+    <div id="excel-preview" style="display:none;">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">
+        Найдено строк: <b id="excel-count">0</b>
+      </p>
+      <div style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;">
+        <table style="width:100%;border-collapse:collapse;box-shadow:none;border:none;">
+          <thead style="position:sticky;top:0;background:#f8fafc;z-index:1;">
+            <tr><th style="padding:8px 10px;font-size:11px;">ФИО</th><th style="padding:8px 10px;font-size:11px;">Код</th><th style="padding:8px 10px;font-size:11px;width:120px;">Статус</th></tr>
+          </thead>
+          <tbody id="excel-preview-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="settings-hint" id="excel-hint" style="margin-top:10px;"></p>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close-modal>Отмена</button>
+      <button class="btn btn-primary" id="btn-import-confirm" disabled>Импортировать</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-danger">
   <div class="modal" style="max-width:420px;">
     <h3>⚠️ Подтверждение</h3>
@@ -463,6 +502,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
@@ -485,6 +525,7 @@
   };
   let editingId = null, infoId = null, editMode = false, deleteExpenseMode = false;
   let pendingReceiptFile = null;
+  let importRows = [];
 
   // ===== Саратовское время =====
   function getSaratovNow() {
@@ -755,6 +796,184 @@
     closeModal(document.getElementById('btn-delete-user'));
   });
 
+  // ===== ИМПОРТ ИЗ EXCEL =====
+  document.getElementById('btn-import-excel').addEventListener('click', function(){
+    importRows = [];
+    document.getElementById('excel-file').value = '';
+    document.getElementById('excel-file-label').textContent = '📎 Выберите .xlsx / .xls / .csv';
+    document.getElementById('excel-preview').style.display = 'none';
+    document.getElementById('excel-hint').textContent = '';
+    document.getElementById('btn-import-confirm').disabled = true;
+    openModal('modal-import-excel');
+  });
+
+  document.getElementById('excel-file').addEventListener('change', async function(e){
+    const file = e.target.files[0];
+    if (!file) return;
+    document.getElementById('excel-file-label').textContent = '📎 ' + file.name;
+    document.getElementById('excel-hint').textContent = '';
+    document.getElementById('excel-hint').style.color = 'var(--muted)';
+
+    try {
+      const rows = await parseExcel(file);
+      if (!rows.length) {
+        document.getElementById('excel-hint').textContent = 'Файл пустой или данные не распознаны';
+        document.getElementById('excel-hint').style.color = 'var(--red)';
+        return;
+      }
+
+      const existingCodes = new Set(state.users.map(u => (u.code || '').trim().toLowerCase()));
+      const existingFios = new Set(state.users.map(u => (u.fio || '').trim().toLowerCase()));
+      const seenCodes = new Set();
+
+      importRows = rows.map(function(r){
+        const codeKey = r.code.trim().toLowerCase();
+        const fioKey = r.fio.trim().toLowerCase();
+        let status = 'ok';
+        let error = '';
+
+        if (!r.fio || !r.code) {
+          status = 'error'; error = 'Пустые поля';
+        } else if (existingCodes.has(codeKey)) {
+          status = 'skip'; error = 'Код уже есть';
+        } else if (existingFios.has(fioKey)) {
+          status = 'skip'; error = 'ФИО уже есть';
+        } else if (seenCodes.has(codeKey)) {
+          status = 'skip'; error = 'Дубль в файле';
+        } else {
+          seenCodes.add(codeKey);
+        }
+
+        return { fio: r.fio.trim(), code: r.code.trim(), status: status, error: error };
+      });
+
+      renderExcelPreview();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('excel-hint').textContent = 'Ошибка чтения файла: ' + (err.message || err);
+      document.getElementById('excel-hint').style.color = 'var(--red)';
+    }
+  });
+
+  async function parseExcel(file) {
+    const isCsv = /\.csv$/i.test(file.name);
+
+    if (isCsv) {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(function(l){ return l.trim(); });
+      const rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const parts = parseCsvLine(lines[i]);
+        if (parts.length >= 2) {
+          rows.push({ fio: parts[0] || '', code: parts[1] || '' });
+        }
+      }
+      return rows;
+    }
+
+    if (typeof XLSX === 'undefined') {
+      throw new Error('Библиотека SheetJS не загрузилась');
+    }
+
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: '' });
+
+    const rows = [];
+    for (let i = 1; i < data.length; i++) {
+      const r = data[i];
+      if (!r || r.length < 2) continue;
+      const fio = String(r[0] || '').trim();
+      const code = String(r[1] || '').trim();
+      if (fio || code) rows.push({ fio: fio, code: code });
+    }
+    return rows;
+  }
+
+  function parseCsvLine(line) {
+    const result = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if ((ch === ',' || ch === ';' || ch === '\t') && !inQuotes) {
+        result.push(cur); cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    result.push(cur);
+    return result;
+  }
+
+  function renderExcelPreview() {
+    const tbody = document.getElementById('excel-preview-tbody');
+    const countEl = document.getElementById('excel-count');
+    const hintEl = document.getElementById('excel-hint');
+
+    tbody.innerHTML = '';
+    const okCount = importRows.filter(function(r){ return r.status === 'ok'; }).length;
+    const skipCount = importRows.filter(function(r){ return r.status === 'skip'; }).length;
+    const errCount = importRows.filter(function(r){ return r.status === 'error'; }).length;
+
+    countEl.textContent = importRows.length;
+
+    importRows.forEach(function(r){
+      const tr = document.createElement('tr');
+      let badge = '';
+      if (r.status === 'ok') badge = '<span style="color:var(--green);font-weight:600;">✓ Новый</span>';
+      if (r.status === 'skip') badge = '<span style="color:var(--yellow);font-weight:600;">⚠ ' + escapeHtml(r.error) + '</span>';
+      if (r.status === 'error') badge = '<span style="color:var(--red);font-weight:600;">✗ ' + escapeHtml(r.error) + '</span>';
+      tr.innerHTML = '<td style="padding:8px 10px;font-size:13px;">' + escapeHtml(r.fio || '—') + '</td>' +
+        '<td style="padding:8px 10px;font-size:13px;">' + escapeHtml(r.code || '—') + '</td>' +
+        '<td style="padding:8px 10px;font-size:12px;">' + badge + '</td>';
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('excel-preview').style.display = 'block';
+
+    if (okCount === 0) {
+      hintEl.textContent = 'Нет новых пользователей для импорта';
+      hintEl.style.color = 'var(--yellow)';
+      document.getElementById('btn-import-confirm').disabled = true;
+    } else {
+      hintEl.textContent = 'Готовы к импорту: ' + okCount +
+        (skipCount ? ' · Пропущено: ' + skipCount : '') +
+        (errCount ? ' · Ошибок: ' + errCount : '');
+      hintEl.style.color = 'var(--green)';
+      document.getElementById('btn-import-confirm').disabled = false;
+    }
+  }
+
+  document.getElementById('btn-import-confirm').addEventListener('click', async function(){
+    const toImport = importRows.filter(function(r){ return r.status === 'ok'; });
+    if (!toImport.length) return;
+
+    const btn = this;
+    btn.disabled = true; btn.textContent = 'Импортируем…';
+
+    try {
+      const payload = toImport.map(function(r){ return { fio: r.fio, code: r.code }; });
+      const res = await db.from('users').insert(payload);
+      if (res.error) throw res.error;
+
+      await loadAll();
+      renderUsers(); renderHome();
+      closeModal(document.getElementById('btn-import-confirm'));
+      alert('Импортировано пользователей: ' + toImport.length);
+    } catch (err) {
+      console.error(err);
+      document.getElementById('excel-hint').textContent = 'Ошибка: ' + (err.message || 'неизвестная');
+      document.getElementById('excel-hint').style.color = 'var(--red)';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Импортировать';
+    }
+  });
+
   // ===== РАСХОДЫ =====
   function renderExpenses() {
     const tbody = document.getElementById('expenses-tbody');
@@ -1000,7 +1219,6 @@
       const r = state.expenseRequests.find(function(x){ return x.id === id; });
       if (!r) return;
       if (!confirm('Одобрить? Расход будет добавлен в общий список (чек сохранится).')) return;
-      // Добавляем расход
       await db.from('expenses').insert({
         date: r.date,
         name: r.name,
@@ -1009,7 +1227,6 @@
         receipt_url: r.receipt_url,
         receipt_path: r.receipt_path
       });
-      // Удаляем заявку
       await db.from('expense_requests').delete().eq('id', id);
       await loadAll();
       renderRequests(); renderExpenses(); renderHome();
@@ -1253,9 +1470,8 @@
     btn.disabled = true; btn.textContent = 'Удаляем…';
 
     try {
-      // Собираем пути чеков
-      const paths1 = state.payments.filter(p => p.receipt_path).map(p => p.receipt_path);
-      const paths2 = state.expenseRequests.filter(r => r.receipt_path).map(r => r.receipt_path);
+      const paths1 = state.payments.filter(function(p){ return p.receipt_path; }).map(function(p){ return p.receipt_path; });
+      const paths2 = state.expenseRequests.filter(function(r){ return r.receipt_path; }).map(function(r){ return r.receipt_path; });
 
       if (paths1.length) await db.storage.from('receipts').remove(paths1).catch(function(){});
       if (paths2.length) await db.storage.from('expense-receipts').remove(paths2).catch(function(){});
