@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
 <title>GoCash Admin</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+<link rel="manifest" href="../manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -18,17 +20,25 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text);
          min-height:100vh; display:flex; flex-direction:column; font-size:14px; -webkit-font-smoothing:antialiased; }
-  .app-header { background:#0f172a; color:#fff; padding:14px 28px; display:flex; align-items:center; }
-  .logo { font-size:20px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .app-header { background:#0f172a; color:#fff; padding:14px 28px; display:flex; align-items:center; gap:16px; }
+  .logo { font-size:20px; font-weight:700; display:flex; align-items:center; gap:8px; flex:1; }
   .logo-icon { width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#22c55e,#16a34a);
                display:flex; align-items:center; justify-content:center; font-size:18px; }
   .logo-text span { color:#22c55e; }
+  .header-actions { display:flex; gap:8px; }
+  .header-btn { background:rgba(255,255,255,.1); color:#fff; border:none; border-radius:8px; padding:8px 12px;
+                font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; transition:all .15s; }
+  .header-btn:hover { background:rgba(255,255,255,.2); }
+
   .app-nav { background:#fff; padding:0 28px; display:flex; gap:4px; border-bottom:1px solid var(--border); overflow-x:auto; }
   .nav-btn { background:transparent; border:none; color:var(--muted); padding:14px 16px; cursor:pointer;
              font-size:14px; font-weight:500; border-bottom:2px solid transparent; transition:all .15s;
-             white-space:nowrap; font-family:inherit; }
+             white-space:nowrap; font-family:inherit; position:relative; }
   .nav-btn:hover { color:var(--text); }
   .nav-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
+  .nav-badge { display:inline-block; background:var(--red); color:#fff; font-size:11px; font-weight:600;
+               padding:2px 7px; border-radius:10px; margin-left:6px; vertical-align:middle; }
+
   .app-main { flex:1; padding:24px 28px; max-width:1400px; width:100%; margin:0 auto; }
   .screen { display:none; } .screen.active { display:block; }
   .screen h2 { font-size:20px; font-weight:600; margin-bottom:16px; }
@@ -123,7 +133,7 @@
                          justify-content:space-between; align-items:center; }
   .expense-month-total { font-size:12px; color:var(--muted); font-weight:500; }
   .expense-item { padding:8px 0; border-bottom:1px dashed var(--border); font-size:12px;
-                  display:flex; justify-content:space-between; gap:8px; }
+                  display:flex; justify-content:space-between; gap:8px; align-items:center; }
   .expense-item:last-child { border-bottom:none; }
   .expense-item-price { font-weight:600; white-space:nowrap; }
 
@@ -146,6 +156,13 @@
   .loader { text-align:center; padding:40px; color:var(--muted); }
   .empty { text-align:center; padding:20px; color:var(--muted); }
 
+  .file-input-wrap { position:relative; margin-bottom:14px; }
+  .file-input-wrap input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .file-input-label { padding:12px; border:2px dashed var(--border); border-radius:10px; text-align:center;
+                      font-size:13px; color:var(--muted); background:#fafbfd; transition:all .15s; }
+  .file-input-wrap:hover .file-input-label { border-color:var(--primary); color:var(--primary); }
+  .file-preview { max-width:100%; border-radius:10px; margin-bottom:12px; display:none; }
+
   @media (max-width:640px) {
     .app-main, .app-header, .app-nav { padding-left:16px; padding-right:16px; }
     .months-grid { grid-template-columns:1fr; }
@@ -160,13 +177,16 @@
     <div class="logo-icon">💰</div>
     <div class="logo-text">Go<span>Cash</span> · Админ</div>
   </div>
+  <div class="header-actions">
+    <button class="header-btn" id="btn-refresh">🔄 Обновить</button>
+  </div>
 </header>
 
 <nav class="app-nav">
   <button class="nav-btn active" data-screen="home">Главная</button>
   <button class="nav-btn" data-screen="expenses">Расходы</button>
   <button class="nav-btn" data-screen="users">Пользователи</button>
-  <button class="nav-btn" data-screen="receipts">Чеки</button>
+  <button class="nav-btn" data-screen="receipts">Чеки<span class="nav-badge" id="receipts-badge" style="display:none;">0</span></button>
   <button class="nav-btn" data-screen="suggestions">Предложения</button>
   <button class="nav-btn" data-screen="history">История</button>
   <button class="nav-btn" data-screen="settings">Настройки</button>
@@ -218,6 +238,7 @@
       <thead><tr>
         <th>Дата</th><th>Название</th><th style="width:80px;">Кол-во</th>
         <th style="width:120px;">Цена</th><th style="width:120px;">Сумма</th>
+        <th style="width:80px;">Чек</th>
         <th style="width:80px;" id="expense-actions-col"></th>
       </tr></thead>
       <tbody id="expenses-tbody"></tbody>
@@ -292,6 +313,14 @@
         </div>
         <p class="settings-hint" id="file-hint"></p>
       </div>
+      <div class="settings-block">
+        <h3>Очистка старых чеков</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+          Удаляет фото чеков расходов старше 2 месяцев. Сами расходы остаются.
+        </p>
+        <button class="btn btn-danger" id="btn-clean-receipts">🧹 Очистить чеки расходов (старше 2 мес)</button>
+        <p class="settings-hint" id="clean-hint"></p>
+      </div>
     </div>
   </section>
 </main>
@@ -339,6 +368,12 @@
     <label>Название</label><input type="text" id="exp-name">
     <label>Количество</label><input type="number" id="exp-qty" min="1" value="1">
     <label>Цена за единицу (₽)</label><input type="number" id="exp-price" min="0" value="0">
+    <label>Фото чека (необязательно)</label>
+    <div class="file-input-wrap">
+      <input type="file" id="exp-receipt" accept="image/*">
+      <div class="file-input-label" id="exp-receipt-label">📎 Нажмите, чтобы выбрать файл</div>
+    </div>
+    <img id="exp-receipt-preview" class="file-preview">
     <div class="modal-actions">
       <button class="btn btn-secondary" data-close-modal>Отмена</button>
       <button class="btn btn-primary" id="btn-save-expense">Сохранить</button>
@@ -361,10 +396,8 @@
 (function(){
   'use strict';
 
-  // ====== НАСТРОЙКИ SUPABASE ======
   const SUPABASE_URL = 'https://cmybjfrvabcumkolsxmj.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNteWJqZnJ2YWJjdW1rb2xzeG1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMjEwNDUsImV4cCI6MjEwNDg5NzA0NX0.rj5ld_t0mRXIar9TAnq4yW5TSLxZGR0kdSLaROFkhYo';
-  // =================================
 
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -374,6 +407,7 @@
 
   const state = { monthlyFee: 1000, users: [], expenses: [], payments: [], suggestions: [] };
   let editingId = null, infoId = null, editMode = false, deleteExpenseMode = false;
+  let pendingReceiptFile = null;
 
   function getSaratovNow() {
     const fmt = new Intl.DateTimeFormat('ru-RU', {
@@ -420,6 +454,14 @@
       if (usr && row.year === year) usr.paid[row.month] = row.status;
     });
     document.getElementById('input-fee').value = state.monthlyFee;
+    updateReceiptsBadge();
+  }
+
+  function updateReceiptsBadge() {
+    const n = state.payments.filter(p => p.status === 'pending').length;
+    const b = document.getElementById('receipts-badge');
+    if (n > 0) { b.textContent = n; b.style.display = 'inline-block'; }
+    else { b.style.display = 'none'; }
   }
 
   function calcDebt(user) {
@@ -635,10 +677,11 @@
         '<td>' + e.qty + '</td>' +
         '<td>' + (Number(e.price)||0).toLocaleString('ru-RU') + ' ₽</td>' +
         '<td><b>' + sum.toLocaleString('ru-RU') + ' ₽</b></td>' +
+        '<td>' + (e.receipt_url ? '<img src="' + e.receipt_url + '" class="receipt-thumb" data-view="' + e.receipt_url + '">' : '—') + '</td>' +
         '<td>' + (deleteExpenseMode ? '<button class="btn-danger-outline" data-del-exp="' + e.id + '">🗑</button>' : '') + '</td>';
       tbody.appendChild(tr);
     });
-    if (!state.expenses.length) tbody.innerHTML = '<tr><td colspan="6" class="empty">Расходов пока нет</td></tr>';
+    if (!state.expenses.length) tbody.innerHTML = '<tr><td colspan="7" class="empty">Расходов пока нет</td></tr>';
 
     const box = document.getElementById('expense-months');
     box.innerHTML = '';
@@ -672,19 +715,65 @@
     document.getElementById('exp-name').value = '';
     document.getElementById('exp-qty').value = 1;
     document.getElementById('exp-price').value = 0;
+    document.getElementById('exp-receipt').value = '';
+    document.getElementById('exp-receipt-label').textContent = '📎 Нажмите, чтобы выбрать файл';
+    document.getElementById('exp-receipt-preview').style.display = 'none';
+    pendingReceiptFile = null;
     openModal('modal-add-expense');
   });
+
+  document.getElementById('exp-receipt').addEventListener('change', function(e){
+    const f = e.target.files[0];
+    if (!f) { pendingReceiptFile = null; return; }
+    pendingReceiptFile = f;
+    document.getElementById('exp-receipt-label').textContent = '📎 ' + f.name;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const img = document.getElementById('exp-receipt-preview');
+      img.src = ev.target.result;
+      img.style.display = 'block';
+    };
+    reader.readAsDataURL(f);
+  });
+
   document.getElementById('btn-save-expense').addEventListener('click', async function(){
     const date = document.getElementById('exp-date').value;
     const name = document.getElementById('exp-name').value.trim();
     const qty = Number(document.getElementById('exp-qty').value) || 1;
     const price = Number(document.getElementById('exp-price').value) || 0;
     if (!date || !name) { alert('Заполните дату и название'); return; }
-    const res = await db.from('expenses').insert({ date: date, name: name, qty: qty, price: price });
-    if (res.error) { alert('Ошибка: ' + res.error.message); return; }
-    await loadAll();
-    renderExpenses(); renderHome();
-    closeModal(document.getElementById('btn-save-expense'));
+
+    const btn = document.getElementById('btn-save-expense');
+    btn.disabled = true; btn.textContent = 'Сохраняем…';
+
+    let receipt_url = null, receipt_path = null;
+
+    try {
+      if (pendingReceiptFile) {
+        const ext = pendingReceiptFile.name.split('.').pop();
+        const path = Date.now() + '-' + Math.round(Math.random()*1e6) + '.' + ext;
+        const up = await db.storage.from('expense-receipts').upload(path, pendingReceiptFile);
+        if (up.error) throw up.error;
+        receipt_path = path;
+        receipt_url = db.storage.from('expense-receipts').getPublicUrl(path).data.publicUrl;
+      }
+
+      const ins = await db.from('expenses').insert({
+        date: date, name: name, qty: qty, price: price,
+        receipt_url: receipt_url, receipt_path: receipt_path
+      });
+      if (ins.error) throw ins.error;
+
+      await loadAll();
+      renderExpenses(); renderHome();
+      closeModal(document.getElementById('btn-save-expense'));
+      pendingReceiptFile = null;
+    } catch (err) {
+      console.error(err);
+      alert('Ошибка: ' + (err.message || 'неизвестная'));
+    } finally {
+      btn.disabled = false; btn.textContent = 'Сохранить';
+    }
   });
 
   const delModeBtn = document.getElementById('btn-delete-mode');
@@ -696,10 +785,21 @@
     renderExpenses();
   });
   document.getElementById('expenses-tbody').addEventListener('click', async function(e){
+    const view = e.target.closest('[data-view]');
+    if (view) {
+      document.getElementById('receipt-view-img').src = view.dataset.view;
+      openModal('modal-receipt-view');
+      return;
+    }
     const d = e.target.closest('[data-del-exp]');
     if (!d) return;
     if (!confirm('Удалить расход?')) return;
-    await db.from('expenses').delete().eq('id', Number(d.dataset.delExp));
+    const id = Number(d.dataset.delExp);
+    const exp = state.expenses.find(function(x){ return x.id === id; });
+    if (exp && exp.receipt_path) {
+      await db.storage.from('expense-receipts').remove([exp.receipt_path]).catch(function(){});
+    }
+    await db.from('expenses').delete().eq('id', id);
     await loadAll();
     renderExpenses(); renderHome();
   });
@@ -741,18 +841,36 @@
       const id = Number(ap.dataset.approve);
       const p = state.payments.find(function(x){ return x.id === id; });
       if (!p) return;
-      await db.from('payments').update({ status: 'approved' }).eq('id', id);
+      if (!confirm('Одобрить заявку? Чек будет удалён с сервера.')) return;
+
+      // 1. ставим месяц paid
       await db.from('months').upsert(
         { user_id: p.user_id, year: p.year, month: p.month, status: 'paid' },
         { onConflict: 'user_id,year,month' }
       );
+      // 2. удаляем файл чека из Storage
+      if (p.receipt_path) {
+        await db.storage.from('receipts').remove([p.receipt_path]).catch(function(){});
+      }
+      // 3. удаляем саму заявку (или помечаем approved)
+      await db.from('payments').delete().eq('id', id);
+
       await loadAll();
       renderReceipts(); renderHome(); renderUsers();
       return;
     }
     const rj = e.target.closest('[data-reject]');
     if (rj) {
-      await db.from('payments').update({ status: 'rejected' }).eq('id', Number(rj.dataset.reject));
+      const id = Number(rj.dataset.reject);
+      const p = state.payments.find(function(x){ return x.id === id; });
+      if (!p) return;
+      if (!confirm('Отклонить заявку? Чек будет удалён с сервера.')) return;
+
+      if (p.receipt_path) {
+        await db.storage.from('receipts').remove([p.receipt_path]).catch(function(){});
+      }
+      await db.from('payments').delete().eq('id', id);
+
       await loadAll();
       renderReceipts();
     }
@@ -880,10 +998,62 @@
     setTimeout(function(){ document.getElementById('file-hint').textContent = ''; }, 2000);
   });
 
+  // ===== Очистка старых чеков расходов (старше 2 месяцев) =====
+  document.getElementById('btn-clean-receipts').addEventListener('click', async function(){
+    if (!confirm('Удалить фото чеков расходов старше 2 месяцев? Сами расходы останутся.')) return;
+
+    const hint = document.getElementById('clean-hint');
+    hint.textContent = 'Ищем…';
+
+    const threshold = new Date();
+    threshold.setMonth(threshold.getMonth() - 2);
+    const thresholdIso = threshold.toISOString().slice(0,10);
+
+    const old = state.expenses.filter(function(e){
+      return e.receipt_path && e.date && e.date < thresholdIso;
+    });
+
+    if (!old.length) {
+      hint.textContent = 'Нечего удалять — старых чеков нет';
+      setTimeout(function(){ hint.textContent = ''; }, 3000);
+      return;
+    }
+
+    const paths = old.map(function(e){ return e.receipt_path; });
+    const rm = await db.storage.from('expense-receipts').remove(paths);
+    if (rm.error) { hint.textContent = 'Ошибка: ' + rm.error.message; return; }
+
+    for (const e of old) {
+      await db.from('expenses').update({ receipt_url: null, receipt_path: null }).eq('id', e.id);
+    }
+
+    await loadAll();
+    renderExpenses();
+    hint.textContent = 'Удалено чеков: ' + old.length;
+    setTimeout(function(){ hint.textContent = ''; }, 4000);
+  });
+
+  // ===== Обновить =====
+  document.getElementById('btn-refresh').addEventListener('click', async function(){
+    const btn = this;
+    btn.disabled = true; btn.textContent = '🔄 …';
+    try {
+      await loadAll();
+      const active = document.querySelector('.nav-btn.active').dataset.screen;
+      showScreen(active);
+    } catch (err) { console.error(err); }
+    btn.disabled = false; btn.textContent = '🔄 Обновить';
+  });
+
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
+  }
+
+  // =================== PWA ===================
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('../service-worker.js').catch(function(){});
   }
 
   // =================== СТАРТ ===================
