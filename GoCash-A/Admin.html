@@ -162,6 +162,7 @@
   <button class="nav-btn" data-screen="expense-requests">Заявки</button>
   <button class="nav-btn" data-screen="disputes">Оспаривания<span class="nav-badge" id="disputes-badge" style="display:none;">0</span></button>
   <button class="nav-btn" data-screen="suggestions">Предложения</button>
+  <button class="nav-btn" data-screen="announcements">Объявления</button>
   <button class="nav-btn" data-screen="info">Инфо</button>
   <button class="nav-btn" data-screen="history">История</button>
   <button class="nav-btn" data-screen="settings">Настройки</button>
@@ -289,6 +290,17 @@
     <div id="suggestions-list"><div class="loader">Загрузка…</div></div>
   </section>
 
+  <section class="screen" id="screen-announcements">
+    <h2>Объявления</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">
+      Пользователи увидят эти объявления один раз при входе — в виде всплывающего окна.
+    </p>
+    <div class="expenses-toolbar">
+      <button class="btn btn-primary" id="btn-add-announcement">+ Новое объявление</button>
+    </div>
+    <div id="announcements-list"></div>
+  </section>
+
   <section class="screen" id="screen-info">
     <h2>Информация</h2>
     <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">
@@ -372,7 +384,7 @@
       <div class="settings-block">
         <h3 style="color:var(--red);">⚠️ Опасная зона</h3>
         <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-          Удаляет <b>все чеки оплат</b>, <b>платежи</b>, <b>предложения</b>, <b>заявки</b>, <b>уведомления</b>, <b>оспаривания</b>.
+          Удаляет <b>все чеки оплат</b>, <b>платежи</b>, <b>предложения</b>, <b>заявки</b>, <b>уведомления</b>, <b>оспаривания</b>, <b>объявления</b>.
         </p>
         <button class="btn btn-danger" id="btn-danger-reset">🗑 Удалить историю и заявки</button>
       </div>
@@ -405,6 +417,8 @@
     <h3 id="info-title">Пользователь</h3>
     <div class="months-grid" id="months-grid"></div>
     <div class="modal-actions">
+      <button class="btn btn-primary" id="btn-print-receipt-from-info">🖨 Квитанция</button>
+      <div class="spacer"></div>
       <button class="btn btn-secondary" data-close-modal>Закрыть</button>
     </div>
   </div>
@@ -501,6 +515,34 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-add-announcement">
+  <div class="modal">
+    <h3 id="ann-modal-title">Новое объявление</h3>
+    <label>Заголовок</label>
+    <input type="text" id="ann-title-input" placeholder="Например, Важное объявление">
+    <label>Текст</label>
+    <textarea id="ann-content-input" placeholder="Текст объявления..." style="min-height:140px;"></textarea>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+      <input type="checkbox" id="ann-active-input" checked style="width:auto;margin:0;">
+      Показывать пользователям
+    </label>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close-modal>Отмена</button>
+      <button class="btn btn-primary" id="btn-save-announcement">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-receipt-print">
+  <div class="modal" style="max-width:700px;">
+    <div id="receipt-print-content" style="background:#fff;padding:30px;font-family:'Inter',sans-serif;"></div>
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn btn-secondary" data-close-modal>Закрыть</button>
+      <button class="btn btn-primary" id="btn-print-receipt">🖨 Печать</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-danger">
   <div class="modal" style="max-width:420px;">
     <h3>⚠️ Подтверждение</h3>
@@ -535,14 +577,13 @@
   const state = {
     monthlyFee: 1000, currentYear: new Date().getFullYear(),
     users: [], admins: [], expenses: [], payments: [],
-    expenseRequests: [], suggestions: [], info: [], disputes: []
+    expenseRequests: [], suggestions: [], info: [], disputes: [], announcements: []
   };
   let editingId = null, infoId = null, editMode = false, deleteExpenseMode = false;
-  let pendingReceiptFile = null, importRows = [], editingInfoId = null;
+  let pendingReceiptFile = null, importRows = [], editingInfoId = null, editingAnnId = null;
   let debtSortDir = 'none';
   let userSearchQuery = '';
 
-  // ===== Саратов =====
   function getSaratovNow() {
     const fmt = new Intl.DateTimeFormat('ru-RU', {timeZone:'Europe/Saratov',year:'numeric',month:'numeric',day:'numeric'});
     const o = {}; fmt.formatToParts(new Date()).forEach(p => o[p.type] = p.value);
@@ -554,14 +595,11 @@
   function effectiveStatus(user, mIdx, year) {
     const s = user.paid[mIdx];
     if (s) return s;
-    // «Прошедшее» правило — только для текущего года
     const now = getSaratovNow();
     if (year === now.year) {
       if (mIdx < now.month) return 'unpaid';
       if (mIdx === now.month && isCurrentMonthBillable()) return 'unpaid';
-    } else if (year < now.year) {
-      return 'unpaid';
-    }
+    } else if (year < now.year) return 'unpaid';
     return null;
   }
 
@@ -578,9 +616,8 @@
     return d.toLocaleDateString('ru-RU');
   }
 
-  // ===== Загрузка =====
   async function loadAll() {
-    const [u, adm, m, e, p, er, s, inf, dis, c] = await Promise.all([
+    const [u, adm, m, e, p, er, s, inf, dis, ann, c] = await Promise.all([
       db.from('users').select('*').order('fio'),
       db.from('admins').select('*').order('fio'),
       db.from('months').select('*').eq('year', getViewYear()),
@@ -590,6 +627,7 @@
       db.from('suggestions').select('*').order('created_at', { ascending:false }),
       db.from('info_articles').select('*').order('sort_order'),
       db.from('disputes').select('*').order('created_at', { ascending:false }),
+      db.from('announcements').select('*').order('created_at', { ascending:false }),
       db.from('config').select('*').eq('id',1).maybeSingle()
     ]);
     state.monthlyFee = (c.data && c.data.monthly_fee) || 1000;
@@ -600,6 +638,7 @@
     state.admins = adm.data || [];
     state.info = inf.data || [];
     state.disputes = dis.data || [];
+    state.announcements = ann.data || [];
     state.users = (u.data || []).map(x => ({ ...x, paid: Array(12).fill(null) }));
     (m.data || []).forEach(row => {
       const usr = state.users.find(x => x.id === row.user_id);
@@ -647,7 +686,6 @@
   }
   function calcBalance() { return calcIncome() - calcSpent(); }
 
-  // ===== Навигация =====
   const navButtons = document.querySelectorAll('.nav-btn');
   const mobileNavButtons = document.querySelectorAll('.mobile-nav-btn');
   const screens = document.querySelectorAll('.screen');
@@ -663,6 +701,7 @@
     if (name === 'expense-requests') renderRequests();
     if (name === 'disputes') renderDisputes();
     if (name === 'suggestions') renderSuggestions();
+    if (name === 'announcements') renderAnnouncements();
     if (name === 'info') renderInfoArticles();
     if (name === 'history') renderHistory();
   }
@@ -674,7 +713,6 @@
   document.querySelectorAll('[data-close-modal]').forEach(b => b.addEventListener('click', function(e){ closeModal(e.target); }));
   document.querySelectorAll('.modal-overlay').forEach(ov => ov.addEventListener('click', function(e){ if (e.target === ov) ov.classList.remove('active'); }));
 
-  // ===== ГЛАВНАЯ =====
   function renderHome() {
     const bal = calcBalance();
     document.getElementById('wallet-balance').textContent = bal.toLocaleString('ru-RU') + ' ₽';
@@ -729,11 +767,9 @@
   document.getElementById('filter-month').addEventListener('change', renderHome);
   document.getElementById('filter-status').addEventListener('change', renderHome);
 
-  // ===== ПОЛЬЗОВАТЕЛИ =====
   function renderUsers() {
     const tbody = document.getElementById('users-tbody');
     tbody.innerHTML = '';
-
     let users = state.users.slice();
     if (userSearchQuery) {
       const q = userSearchQuery.toLowerCase();
@@ -755,11 +791,8 @@
       tbody.appendChild(tr);
     });
     if (!users.length) tbody.innerHTML = '<tr><td colspan="5" class="empty">Нет пользователей</td></tr>';
-
     const arrow = document.getElementById('debt-sort-arrow');
-    if (arrow) {
-      arrow.textContent = debtSortDir === 'asc' ? '↑' : debtSortDir === 'desc' ? '↓' : '↕';
-    }
+    if (arrow) arrow.textContent = debtSortDir === 'asc' ? '↑' : debtSortDir === 'desc' ? '↓' : '↕';
   }
 
   document.getElementById('user-search').addEventListener('input', function(e){
@@ -867,7 +900,6 @@
     closeModal(document.getElementById('btn-delete-user'));
   });
 
-  // ===== ИМПОРТ EXCEL =====
   document.getElementById('btn-import-excel').addEventListener('click', function(){
     importRows = [];
     document.getElementById('excel-file').value = '';
@@ -1010,7 +1042,6 @@
     } finally { btn.disabled = false; btn.textContent = 'Импортировать'; }
   });
 
-  // ===== РАСХОДЫ =====
   function renderExpenses() {
     const tbody = document.getElementById('expenses-tbody');
     tbody.innerHTML = '';
@@ -1137,7 +1168,6 @@
     openModal('modal-receipt-view');
   }
 
-  // ===== ЧЕКИ ОПЛАТ =====
   function renderReceipts() {
     const tbody = document.getElementById('receipts-tbody');
     tbody.innerHTML = '';
@@ -1192,7 +1222,6 @@
     }
   });
 
-  // ===== ЗАЯВКИ НА РАСХОД =====
   function renderRequests() {
     const tbody = document.getElementById('requests-tbody');
     tbody.innerHTML = '';
@@ -1246,7 +1275,6 @@
     }
   });
 
-  // ===== ОСПАРИВАНИЯ =====
   function renderDisputes() {
     const tbody = document.getElementById('disputes-tbody');
     tbody.innerHTML = '';
@@ -1279,7 +1307,6 @@
       const d = state.disputes.find(x => x.id === id);
       if (!d) return;
       if (!confirm('Одобрить оспаривание?')) return;
-      // Ставим месяц в статус otp/kmd
       if (d.reason === 'otp' || d.reason === 'kmd') {
         await db.from('months').upsert(
           { user_id: d.user_id, year: d.year, month: d.month, status: d.reason },
@@ -1311,7 +1338,6 @@
     }
   });
 
-  // ===== ПРЕДЛОЖЕНИЯ =====
   function renderSuggestions() {
     const list = document.getElementById('suggestions-list');
     const items = state.suggestions.slice().sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
@@ -1323,6 +1349,165 @@
         '<div>' + escapeHtml(s.text) + '</div></div>';
     }).join('');
   }
+
+  // ===== ОБЪЯВЛЕНИЯ =====
+  function renderAnnouncements() {
+    const box = document.getElementById('announcements-list');
+    if (!state.announcements.length) {
+      box.innerHTML = '<div class="card empty">Пока нет объявлений. Нажмите «+ Новое объявление».</div>';
+      return;
+    }
+    box.innerHTML = state.announcements.map(a => {
+      const status = a.active
+        ? '<span style="display:inline-block;background:#dcfce7;color:#166534;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;">Показывается</span>'
+        : '<span style="display:inline-block;background:#fee2e2;color:#991b1b;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;">Скрыто</span>';
+      return '<div class="info-article">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+        '<h4 style="margin:0;">' + escapeHtml(a.title) + '</h4>' + status + '</div>' +
+        '<p>' + escapeHtml(a.content) + '</p>' +
+        '<div style="font-size:11px;color:var(--muted);margin:8px 0;">' + new Date(a.created_at).toLocaleString('ru-RU') + '</div>' +
+        '<div style="display:flex;gap:8px;">' +
+        '<button class="btn-icon" data-edit-ann="' + a.id + '">Ред.</button>' +
+        '<button class="btn-danger-outline" data-del-ann="' + a.id + '">Удалить</button>' +
+        '</div></div>';
+    }).join('');
+  }
+
+  document.getElementById('btn-add-announcement').addEventListener('click', function(){
+    editingAnnId = null;
+    document.getElementById('ann-modal-title').textContent = 'Новое объявление';
+    document.getElementById('ann-title-input').value = '';
+    document.getElementById('ann-content-input').value = '';
+    document.getElementById('ann-active-input').checked = true;
+    openModal('modal-add-announcement');
+  });
+
+  document.getElementById('announcements-list').addEventListener('click', async function(e){
+    const ed = e.target.closest('[data-edit-ann]');
+    if (ed) {
+      const id = Number(ed.dataset.editAnn);
+      const a = state.announcements.find(x => x.id === id);
+      editingAnnId = id;
+      document.getElementById('ann-modal-title').textContent = 'Редактирование';
+      document.getElementById('ann-title-input').value = a.title;
+      document.getElementById('ann-content-input').value = a.content;
+      document.getElementById('ann-active-input').checked = !!a.active;
+      openModal('modal-add-announcement');
+      return;
+    }
+    const d = e.target.closest('[data-del-ann]');
+    if (d) {
+      if (!confirm('Удалить объявление?')) return;
+      await db.from('announcements').delete().eq('id', Number(d.dataset.delAnn));
+      await loadAll();
+      renderAnnouncements();
+    }
+  });
+
+  document.getElementById('btn-save-announcement').addEventListener('click', async function(){
+    const title = document.getElementById('ann-title-input').value.trim();
+    const content = document.getElementById('ann-content-input').value.trim();
+    const active = document.getElementById('ann-active-input').checked;
+    if (!title || !content) { alert('Заполните заголовок и текст'); return; }
+    if (editingAnnId) {
+      await db.from('announcements').update({ title, content, active }).eq('id', editingAnnId);
+    } else {
+      await db.from('announcements').insert({ title, content, active });
+    }
+    await loadAll();
+    renderAnnouncements();
+    closeModal(document.getElementById('btn-save-announcement'));
+  });
+
+  // ===== ПЕЧАТЬ КВИТАНЦИИ =====
+  document.getElementById('btn-print-receipt-from-info').addEventListener('click', function(){
+    const user = state.users.find(u => u.id === infoId);
+    if (!user) return;
+    renderReceiptForPrint(user);
+    closeModal(document.getElementById('btn-print-receipt-from-info'));
+    openModal('modal-receipt-print');
+  });
+
+  function renderReceiptForPrint(user) {
+    const year = getViewYear();
+    const fee = state.monthlyFee;
+    const now = getSaratovNow();
+    let lastBillable = 11;
+    if (year === now.year) lastBillable = isCurrentMonthBillable() ? now.month : now.month - 1;
+    else if (year > now.year) lastBillable = -1;
+
+    const debtRows = [];
+    for (let i = 0; i <= lastBillable; i++) {
+      const st = user.paid[i];
+      if (st === 'paid' || st === 'otp' || st === 'kmd') continue;
+      debtRows.push({
+        month: MONTHS[i],
+        amount: fee,
+        reason: st === 'unpaid' ? 'Не сдал' : 'Не оплачено'
+      });
+    }
+    const total = debtRows.length * fee;
+    const today = new Date().toLocaleDateString('ru-RU', {day:'2-digit', month:'long', year:'numeric'});
+
+    let html =
+      '<div style="text-align:center;border-bottom:2px solid #1a2233;padding-bottom:14px;margin-bottom:20px;">' +
+        '<div style="font-size:22px;font-weight:700;letter-spacing:-0.5px;">Go<span style="color:#22c55e;">Cash</span></div>' +
+        '<div style="font-size:12px;color:#6b7690;margin-top:4px;">Квитанция на оплату взносов</div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:20px;font-size:13px;">' +
+        '<div><b>Получатель:</b> касса клуба</div>' +
+        '<div><b>Период:</b> ' + year + ' год</div>' +
+      '</div>' +
+      '<div style="background:#f8fafc;padding:14px;border-radius:8px;margin-bottom:20px;font-size:14px;">' +
+        '<div><b>Плательщик:</b> ' + escapeHtml(user.fio) + '</div>' +
+        '<div style="color:#6b7690;margin-top:4px;font-size:12px;">Код доступа: ' + escapeHtml(user.code) + '</div>' +
+      '</div>';
+
+    if (!debtRows.length) {
+      html += '<div style="text-align:center;padding:30px 0;color:#22c55e;font-size:16px;font-weight:600;">✓ Задолженностей за ' + year + ' год нет</div>';
+    } else {
+      html += '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;">' +
+        '<thead><tr style="background:#f1f5f9;">' +
+          '<th style="text-align:left;padding:10px;border:1px solid #e2e8f0;">Месяц</th>' +
+          '<th style="text-align:left;padding:10px;border:1px solid #e2e8f0;">Причина</th>' +
+          '<th style="text-align:right;padding:10px;border:1px solid #e2e8f0;width:130px;">Сумма</th>' +
+        '</tr></thead><tbody>';
+      debtRows.forEach(r => {
+        html += '<tr>' +
+          '<td style="padding:10px;border:1px solid #e2e8f0;">' + r.month + '</td>' +
+          '<td style="padding:10px;border:1px solid #e2e8f0;color:#6b7690;">' + r.reason + '</td>' +
+          '<td style="padding:10px;border:1px solid #e2e8f0;text-align:right;font-weight:600;">' + r.amount.toLocaleString('ru-RU') + ' ₽</td>' +
+        '</tr>';
+      });
+      html += '<tr style="background:#f1f5f9;font-weight:700;">' +
+          '<td colspan="2" style="padding:12px;border:1px solid #e2e8f0;">ИТОГО К ОПЛАТЕ</td>' +
+          '<td style="padding:12px;border:1px solid #e2e8f0;text-align:right;font-size:16px;color:#ef4444;">' + total.toLocaleString('ru-RU') + ' ₽</td>' +
+        '</tr></tbody></table>';
+    }
+
+    html += '<div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px;color:#6b7690;">' +
+        '<div>Дата формирования: ' + today + '</div>' +
+        '<div>Подпись получателя: _______________</div>' +
+      '</div>' +
+      '<div style="margin-top:20px;padding-top:14px;border-top:1px dashed #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">' +
+        'Оплата взносов производится до 15 числа текущего месяца' +
+      '</div>';
+
+    document.getElementById('receipt-print-content').innerHTML = html;
+  }
+
+  document.getElementById('btn-print-receipt').addEventListener('click', function(){
+    const content = document.getElementById('receipt-print-content').innerHTML;
+    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    printWindow.document.write(
+      '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Квитанция</title>' +
+      '<style>body{font-family:Inter,Arial,sans-serif;padding:30px;color:#1a2233;}</style>' +
+      '</head><body>' + content +
+      '<script>window.onload=function(){setTimeout(function(){window.print();},300);};<\/script>' +
+      '</body></html>'
+    );
+    printWindow.document.close();
+  });
 
   // ===== ИНФО =====
   function renderInfoArticles() {
@@ -1453,7 +1638,6 @@
     document.getElementById(id).addEventListener('change', renderHistory);
   });
 
-  // ===== НАСТРОЙКИ =====
   document.getElementById('btn-save-fee').addEventListener('click', async function(){
     const val = Number(document.getElementById('input-fee').value);
     if (!val || val < 0) { alert('Введите корректную сумму'); return; }
@@ -1513,7 +1697,7 @@
       users: state.users.map(u => ({ id:u.id, fio:u.fio, code:u.code, paid:u.paid, last_login:u.last_login })),
       admins: state.admins, expenses: state.expenses, payments: state.payments,
       expenseRequests: state.expenseRequests, disputes: state.disputes,
-      suggestions: state.suggestions, info: state.info,
+      suggestions: state.suggestions, info: state.info, announcements: state.announcements,
       exportedAt: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(dump, null, 2)], { type:'application/json' });
@@ -1571,8 +1755,10 @@
       await db.from('suggestions').delete().neq('id', 0);
       await db.from('notifications').delete().neq('id', 0);
       await db.from('disputes').delete().neq('id', 0);
+      await db.from('announcements').delete().neq('id', 0);
+      await db.from('announcement_reads').delete().neq('id', 0);
       await loadAll();
-      renderHome(); renderReceipts(); renderRequests(); renderSuggestions(); renderDisputes();
+      renderHome(); renderReceipts(); renderRequests(); renderSuggestions(); renderDisputes(); renderAnnouncements();
       closeModal(document.getElementById('btn-danger-confirm'));
       alert('Готово! Всё удалено.');
     } catch (err) { console.error(err); errEl.textContent = 'Ошибка: ' + (err.message || 'неизвестная'); }
@@ -1589,7 +1775,6 @@
     btn.disabled = false; btn.textContent = '🔄 Обновить';
   });
 
-  // ===== ПЕРЕКЛЮЧЕНИЕ ГОДА =====
   (function initYearSelect(){
     const sel = document.getElementById('year-select');
     const curYear = new Date().getFullYear();
@@ -1598,7 +1783,6 @@
       o.value = y; o.textContent = y;
       sel.appendChild(o);
     }
-    // Восстанавливаем сохранённый год
     let saved = null;
     try { saved = localStorage.getItem('gocash_view_year'); } catch(e){}
     if (saved && Number(saved)) state.currentYear = Number(saved);
