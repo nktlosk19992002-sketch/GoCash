@@ -54,7 +54,7 @@
   .debt-hint{font-size:11px;color:var(--muted);margin-top:2px}
   .debt-arrow{font-size:22px;color:var(--muted);transition:transform .15s}
   .debt-card-inner:hover .debt-arrow{transform:translateX(3px)}
-  .debt-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);font-size:14px;cursor:pointer;transition:background .15s;border-radius:8px;padding-left:8px;padding-right:8px}
+  .debt-row{display:flex;align-items:center;justify-content:space-between;padding:14px 8px;border-bottom:1px solid var(--border);font-size:14px;cursor:pointer;transition:background .15s;border-radius:8px}
   .debt-row:hover{background:#fef2f2}
   .debt-row:last-child{border-bottom:none}
   .debt-row .month{font-weight:600}
@@ -144,6 +144,10 @@
   .admin-list-item.otp{border-color:#fcd34d;background:#fffbeb}
   .admin-list-item.kmd{border-color:#93c5fd;background:#eff6ff}
   .admin-list-item.none{border-color:var(--border);background:#f8fafc;color:var(--muted)}
+  .announcement-modal .modal{text-align:center;max-width:420px}
+  .announcement-modal .ann-icon{font-size:52px;line-height:1;margin-bottom:12px}
+  .announcement-modal h3{text-align:center;margin-bottom:14px;font-size:19px}
+  .announcement-modal .ann-body{font-size:14px;line-height:1.6;color:#4b5563;white-space:pre-wrap;text-align:left;margin-bottom:20px;background:#f8fafc;padding:14px;border-radius:10px}
   .mobile-nav{display:none}
   @media (max-width:768px){
     body{padding-bottom:68px}
@@ -357,6 +361,15 @@
   </div>
 </div>
 
+<div class="modal-overlay announcement-modal" id="modal-announcement">
+  <div class="modal">
+    <div class="ann-icon">📢</div>
+    <h3 id="ann-title-display">Объявление</h3>
+    <div class="ann-body" id="ann-content-display"></div>
+    <button class="btn btn-primary" id="btn-ann-ok">Ок, прочитано</button>
+  </div>
+</div>
+
 <nav class="mobile-nav" id="mobile-nav">
   <button class="mobile-nav-btn" data-action="pay"><span class="icon">✅</span>Сдал</button>
   <button class="mobile-nav-btn" data-action="skip"><span class="icon">❌</span>Не сдаю</button>
@@ -385,6 +398,7 @@
   let notifications = [];
   let currentYear = new Date().getFullYear();
   let disputeMonth = null;
+  let annQueue = [];
 
   function getSaratovNow() {
     const fmt = new Intl.DateTimeFormat('ru-RU', {timeZone:'Europe/Saratov',year:'numeric',month:'numeric',day:'numeric'});
@@ -402,7 +416,6 @@
     });
   }
 
-  // ===== ВХОД =====
   document.getElementById('btn-login').addEventListener('click', async function(){
     const fio = document.getElementById('auth-name').value.trim();
     const code = document.getElementById('auth-code').value.trim();
@@ -467,6 +480,7 @@
     await Promise.all([loadMyMonths(), loadBalance(), loadSuggestions(), loadNotifications()]);
     await loadMyHistory();
     await loadMyDebt();
+    await checkNewAnnouncements();
   }
 
   async function loadBalance() {
@@ -485,7 +499,6 @@
       'Сдано: ' + income.toLocaleString('ru-RU') + ' ₽ · Расходы: ' + spent.toLocaleString('ru-RU') + ' ₽';
   }
 
-  // ===== ЗАДОЛЖЕННОСТЬ =====
   async function loadMyDebt() {
     const card = document.getElementById('debt-card');
     const valueEl = document.getElementById('my-debt-value');
@@ -502,7 +515,6 @@
     const byMonth = {};
     (monthsRes.data || []).forEach(m => byMonth[m.month] = m.status);
 
-    // Месяцы, по которым уже есть pending-оспаривание — считаем не долгом
     const disputing = new Set();
     (disputesRes.data || []).forEach(d => {
       if (d.status === 'pending') disputing.add(d.month);
@@ -564,14 +576,9 @@
     for (let i = 0; i <= lastBillable; i++) {
       const st = byMonth[i];
       if (st === 'paid' || st === 'otp' || st === 'kmd') continue;
-      debts.push({
-        month: i,
-        status: st,
-        dispute: disputeByMonth[i] || null
-      });
+      debts.push({ month: i, status: st, dispute: disputeByMonth[i] || null });
     }
 
-    // Учитываем только месяцы, которые не находятся в pending-споре, для итога
     let totalDebt = 0;
     debts.forEach(d => {
       if (!d.dispute || d.dispute.status !== 'pending') totalDebt += fee;
@@ -616,7 +623,6 @@
     document.getElementById('modal-debt-details').classList.add('active');
   });
 
-  // ===== ОСПАРИВАНИЕ =====
   document.getElementById('debt-details-list').addEventListener('click', function(e){
     const row = e.target.closest('[data-dispute-month]');
     if (!row) return;
@@ -643,11 +649,9 @@
     if (disputeMonth === null) return;
     const reason = document.getElementById('dispute-reason').value;
 
-    // Если выбрали "уже сдавал" — просто подсказка, не создаём спор
     if (reason === 'paid') {
       alert('Прикрепите чек в разделе «СДАЛ» на этот месяц. После одобрения долг будет снят автоматически.');
       document.getElementById('modal-dispute').classList.remove('active');
-      // Открываем окно СДАЛ с предвыбранным месяцем
       document.getElementById('btn-pay').click();
       setTimeout(function(){
         const grid = document.getElementById('pay-months');
@@ -657,13 +661,12 @@
       return;
     }
 
-    // Проверим, нет ли уже открытого спора
     const existing = await db.from('disputes').select('*')
       .eq('user_id', uid()).eq('year', currentYear).eq('month', disputeMonth)
       .eq('status', 'pending').maybeSingle();
 
     if (existing.data) {
-      alert('У вас уже есть открытое оспаривание по этому месяцу. Дождитесь ответа администратора.');
+      alert('У вас уже есть открытое оспаривание по этому месяцу.');
       return;
     }
 
@@ -671,15 +674,10 @@
     btn.disabled = true; btn.textContent = 'Отправляем…';
     try {
       const ins = await db.from('disputes').insert({
-        user_id: uid(),
-        year: currentYear,
-        month: disputeMonth,
-        reason: reason,
-        status: 'pending'
+        user_id: uid(), year: currentYear, month: disputeMonth, reason, status: 'pending'
       });
       if (ins.error) throw ins.error;
-
-      alert('Оспаривание отправлено ✓\nАдминистратор рассмотрит его в ближайшее время.');
+      alert('Оспаривание отправлено ✓');
       document.getElementById('modal-dispute').classList.remove('active');
       await loadMyDebt();
     } catch (err) {
@@ -991,6 +989,38 @@
     ).join('');
   }
 
+  // ===== ОДНОРАЗОВЫЕ ОБЪЯВЛЕНИЯ =====
+  async function checkNewAnnouncements() {
+    const anns = await db.from('announcements').select('*').eq('active', true).order('created_at', { ascending: true });
+    if (!anns.data || !anns.data.length) return;
+
+    const reads = await db.from('announcement_reads').select('announcement_id').eq('user_id', uid());
+    const readIds = new Set((reads.data || []).map(r => r.announcement_id));
+
+    annQueue = anns.data.filter(a => !readIds.has(a.id));
+    if (annQueue.length) showNextAnnouncement();
+  }
+
+  function showNextAnnouncement() {
+    if (!annQueue.length) return;
+    const a = annQueue[0];
+    document.getElementById('ann-title-display').textContent = a.title;
+    document.getElementById('ann-content-display').textContent = a.content;
+    document.getElementById('modal-announcement').classList.add('active');
+  }
+
+  document.getElementById('btn-ann-ok').addEventListener('click', async function(){
+    const a = annQueue.shift();
+    if (a) {
+      try {
+        await db.from('announcement_reads').insert({ user_id: uid(), announcement_id: a.id });
+      } catch(e) { console.warn('Не удалось сохранить прочтение', e); }
+    }
+    document.getElementById('modal-announcement').classList.remove('active');
+    setTimeout(showNextAnnouncement, 400);
+  });
+
+  // ===== АДМИН-ПАНЕЛЬ =====
   async function initAdminPanel() {
     document.getElementById('main-screen').style.display = 'none';
     document.getElementById('admin-screen').style.display = 'block';
