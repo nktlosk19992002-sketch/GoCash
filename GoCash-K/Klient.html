@@ -59,11 +59,74 @@
   .admin-btn:hover { filter: brightness(.95); }
 
   .balance-card { background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff;
-                  border-radius:var(--radius); padding:22px; text-align:center; margin-bottom:20px;
+                  border-radius:var(--radius); padding:22px; text-align:center; margin-bottom:14px;
                   box-shadow:0 6px 20px rgba(15,23,42,.2); }
   .balance-label { font-size:11px; opacity:.7; text-transform:uppercase; letter-spacing:.5px; }
   .balance-value { font-size:32px; font-weight:700; margin-top:6px; letter-spacing:-.5px; }
   .balance-sub { font-size:11px; opacity:.7; margin-top:4px; }
+
+  /* ===== Карточка задолженности ===== */
+  .debt-card { margin-bottom:20px; }
+  .debt-card-inner {
+    background:#fff;
+    border-radius:var(--radius);
+    padding:16px 18px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    border:1px solid #fecaca;
+    box-shadow:0 1px 3px rgba(20,30,50,.05);
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .debt-card-inner:hover {
+    border-color: #ef4444;
+    box-shadow:0 4px 12px rgba(239,68,68,.12);
+  }
+  .debt-card-inner.no-debt {
+    border-color: #86efac;
+  }
+  .debt-card-inner.no-debt:hover {
+    border-color: #22c55e;
+    box-shadow:0 4px 12px rgba(34,197,94,.12);
+  }
+  .debt-icon { font-size:26px; line-height:1; }
+  .debt-info { flex:1; }
+  .debt-label { font-size:12px; color:var(--muted); margin-bottom:2px; }
+  .debt-value { font-size:20px; font-weight:700; color:var(--red); }
+  .debt-value.zero { color:var(--green); }
+  .debt-hint { font-size:11px; color:var(--muted); margin-top:2px; }
+  .debt-arrow { font-size:22px; color:var(--muted); transition:transform .15s; }
+  .debt-card-inner:hover .debt-arrow { transform:translateX(3px); }
+
+  .debt-row {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 0;
+    border-bottom:1px solid var(--border);
+    font-size:14px;
+  }
+  .debt-row:last-child { border-bottom:none; }
+  .debt-row .month { font-weight:500; }
+  .debt-row .reason { font-size:12px; color:var(--muted); margin-top:2px; }
+  .debt-row .amount { font-weight:600; color:var(--red); white-space:nowrap; }
+  .debt-summary {
+    background:#fef2f2;
+    border:1px solid #fecaca;
+    border-radius:10px;
+    padding:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .debt-summary.no-debt {
+    background:#f0fdf4;
+    border-color:#86efac;
+  }
+  .debt-summary .label { font-size:13px; color:var(--muted); }
+  .debt-summary .total { font-size:22px; font-weight:700; color:var(--red); }
+  .debt-summary.no-debt .total { color:var(--green); }
 
   .btn { width:100%; padding:14px; border:none; border-radius:12px; font-size:15px; font-weight:600;
          cursor:pointer; font-family:inherit; transition:all .15s; margin-bottom:10px;
@@ -245,6 +308,18 @@
     <div class="balance-sub" id="balance-sub"></div>
   </div>
 
+  <div class="debt-card" id="debt-card" style="display:none;">
+    <div class="debt-card-inner" id="btn-my-debt" role="button" tabindex="0">
+      <div class="debt-icon">💳</div>
+      <div class="debt-info">
+        <div class="debt-label">Моя задолженность</div>
+        <div class="debt-value" id="my-debt-value">0 ₽</div>
+        <div class="debt-hint" id="my-debt-hint">Нажмите, чтобы посмотреть детали</div>
+      </div>
+      <div class="debt-arrow">›</div>
+    </div>
+  </div>
+
   <button class="btn btn-green" id="btn-pay">✅ СДАЛ</button>
   <button class="btn btn-red" id="btn-skip">❌ НЕ СДАЮ</button>
   <button class="btn btn-orange" id="btn-bought">🛒 Я купил</button>
@@ -370,6 +445,15 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-debt-details">
+  <div class="modal">
+    <h3>💳 Моя задолженность</h3>
+    <div id="debt-details-summary" style="margin-bottom:14px;"></div>
+    <div id="debt-details-list" style="max-height:50vh;overflow-y:auto;"></div>
+    <button class="btn btn-gray" data-close-modal style="margin-top:14px;">Закрыть</button>
+  </div>
+</div>
+
 <nav class="mobile-nav" id="mobile-nav">
   <button class="mobile-nav-btn" data-action="pay"><span class="icon">✅</span>Сдал</button>
   <button class="mobile-nav-btn" data-action="skip"><span class="icon">❌</span>Не сдаю</button>
@@ -411,7 +495,7 @@
     return isNaN(n) ? currentUser.id : n;
   }
 
-    async function loadMyMonths() {
+  async function loadMyMonths() {
     const year = getSaratovNow().year;
     const res = await db.from('months').select('*').eq('user_id', uid()).eq('year', year);
     myMonths = Array(12).fill(null);
@@ -440,7 +524,6 @@
       }
       currentUser = res.data;
       isAdmin = false;
-      // Обновляем last_login
       try {
         await db.from('users').update({ last_login: new Date().toISOString() }).eq('id', currentUser.id);
       } catch (e) { console.warn('last_login update failed', e); }
@@ -450,16 +533,31 @@
     await loadMain();
   });
 
+  // Авто-вход с проверкой сессии
   (async function(){
     let saved = null;
     try { saved = sessionStorage.getItem('gocash_user'); } catch(e){}
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        currentUser = parsed.user;
-        isAdmin = parsed.isAdmin;
-        await loadMain();
-      } catch(e){}
+        const checkId = Number(parsed.user.id);
+        let stillExists = false;
+        if (parsed.isAdmin) {
+          const r = await db.from('admins').select('id').eq('id', checkId).maybeSingle();
+          stillExists = !!r.data;
+        } else {
+          const r = await db.from('users').select('id').eq('id', checkId).maybeSingle();
+          stillExists = !!r.data;
+        }
+        if (stillExists) {
+          currentUser = parsed.user;
+          isAdmin = parsed.isAdmin;
+          await loadMain();
+        } else {
+          sessionStorage.removeItem('gocash_user');
+          console.warn('Сессия устарела — юзер удалён');
+        }
+      } catch(e) { console.error(e); }
     }
   })();
 
@@ -474,6 +572,7 @@
 
     await Promise.all([loadMyMonths(), loadBalance(), loadSuggestions(), loadNotifications()]);
     await loadMyHistory();
+    await loadMyDebt();
   }
 
   async function loadBalance() {
@@ -491,6 +590,100 @@
       'Сдано: ' + income.toLocaleString('ru-RU') + ' ₽ · Расходы: ' + spent.toLocaleString('ru-RU') + ' ₽';
   }
 
+  // ===== ЗАДОЛЖЕННОСТЬ =====
+  async function loadMyDebt() {
+    const card = document.getElementById('debt-card');
+    const valueEl = document.getElementById('my-debt-value');
+    const hintEl = document.getElementById('my-debt-hint');
+    const inner = document.getElementById('btn-my-debt');
+
+    const [conf, monthsRes] = await Promise.all([
+      db.from('config').select('monthly_fee').eq('id',1).maybeSingle(),
+      db.from('months').select('*').eq('user_id', uid()).eq('year', getSaratovNow().year)
+    ]);
+
+    const fee = (conf.data && conf.data.monthly_fee) || 1000;
+    const byMonth = {};
+    (monthsRes.data || []).forEach(function(m){ byMonth[m.month] = m.status; });
+
+    const now = getSaratovNow();
+    const lastBillable = isCurrentMonthBillable() ? now.month : now.month - 1;
+
+    const debts = [];
+    for (let i = 0; i <= lastBillable; i++) {
+      const st = byMonth[i];
+      if (st === 'paid' || st === 'otp' || st === 'kmd') continue;
+      debts.push(i);
+    }
+
+    const totalDebt = debts.length * fee;
+
+    if (totalDebt > 0) {
+      valueEl.textContent = totalDebt.toLocaleString('ru-RU') + ' ₽';
+      valueEl.className = 'debt-value';
+      hintEl.textContent = debts.length + ' мес. · Нажмите для деталей';
+      inner.classList.remove('no-debt');
+    } else {
+      valueEl.textContent = '0 ₽';
+      valueEl.className = 'debt-value zero';
+      hintEl.textContent = 'Всё оплачено ✓';
+      inner.classList.add('no-debt');
+    }
+    card.style.display = 'block';
+  }
+
+  document.getElementById('btn-my-debt').addEventListener('click', async function(){
+    const summary = document.getElementById('debt-details-summary');
+    const list = document.getElementById('debt-details-list');
+    list.innerHTML = '<div class="loader">Загрузка…</div>';
+    summary.innerHTML = '';
+
+    const [conf, monthsRes] = await Promise.all([
+      db.from('config').select('monthly_fee').eq('id',1).maybeSingle(),
+      db.from('months').select('*').eq('user_id', uid()).eq('year', getSaratovNow().year)
+    ]);
+
+    const fee = (conf.data && conf.data.monthly_fee) || 1000;
+    const byMonth = {};
+    (monthsRes.data || []).forEach(function(m){ byMonth[m.month] = m.status; });
+
+    const now = getSaratovNow();
+    const lastBillable = isCurrentMonthBillable() ? now.month : now.month - 1;
+
+    const debts = [];
+    for (let i = 0; i <= lastBillable; i++) {
+      const st = byMonth[i];
+      if (st === 'paid' || st === 'otp' || st === 'kmd') continue;
+      debts.push({ month: i, status: st });
+    }
+
+    const totalDebt = debts.length * fee;
+    const sumCls = totalDebt > 0 ? '' : 'no-debt';
+
+    summary.innerHTML =
+      '<div class="debt-summary ' + sumCls + '">' +
+        '<div><div class="label">Итого задолженность</div>' +
+        '<div class="total">' + totalDebt.toLocaleString('ru-RU') + ' ₽</div></div>' +
+        '<div style="font-size:36px;">' + (totalDebt > 0 ? '⚠️' : '✅') + '</div>' +
+      '</div>';
+
+    if (!debts.length) {
+      list.innerHTML = '<div class="empty" style="padding:20px;text-align:center;color:var(--muted);">Задолженностей нет 🎉</div>';
+    } else {
+      list.innerHTML = debts.map(function(d){
+        const reason = d.status === 'unpaid' ? 'Отмечено «не сдал»' : 'Не оплачено';
+        return '<div class="debt-row">' +
+          '<div><div class="month">' + MONTHS[d.month] + '</div>' +
+          '<div class="reason">' + reason + '</div></div>' +
+          '<div class="amount">' + fee.toLocaleString('ru-RU') + ' ₽</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    document.getElementById('modal-debt-details').classList.add('active');
+  });
+
+  // ===== УВЕДОМЛЕНИЯ =====
   async function loadNotifications() {
     const res = await db.from('notifications').select('*').eq('user_id', uid())
       .order('created_at', { ascending: false }).limit(20);
@@ -524,6 +717,7 @@
     renderNotifications();
   });
 
+  // ===== ИСТОРИЯ =====
   async function loadMyHistory() {
     const box = document.getElementById('my-history');
     box.innerHTML = '<div class="loader">Загрузка…</div>';
@@ -665,6 +859,7 @@
     );
     if (up.error) { alert('Ошибка месяцы: ' + up.error.message); return; }
     await loadMyMonths();
+    await loadMyDebt();
     alert('Причина отправлена ✓');
     document.getElementById('modal-skip').classList.remove('active');
   });
@@ -754,7 +949,6 @@
       '<span>Итого</span><span>' + total.toLocaleString('ru-RU') + ' ₽</span></div>';
   }
 
-  // ===== ИНФО =====
   async function openInfo() {
     const box = document.getElementById('info-list-client');
     box.innerHTML = '<div class="loader">Загрузка…</div>';
@@ -802,7 +996,6 @@
     }).join('');
   }
 
-  // ===== АДМИН-ПАНЕЛЬ =====
   async function initAdminPanel() {
     document.getElementById('main-screen').style.display = 'none';
     document.getElementById('admin-screen').style.display = 'block';
@@ -902,10 +1095,8 @@
 
   function toggleMobileNav(show) {
     const nav = document.getElementById('mobile-nav');
-    // Мобильное меню отображается только на мобильном по CSS
-    // Дополнительно скрываем, если не залогинен
     if (!show) nav.style.display = 'none';
-    else nav.style.display = ''; // управляет медиазапрос
+    else nav.style.display = '';
   }
 
   document.querySelectorAll('[data-close-modal]').forEach(function(btn){
