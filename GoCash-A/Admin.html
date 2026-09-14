@@ -10,214 +10,134 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg:#f4f6fa; --card:#fff; --text:#1a2233; --muted:#6b7690; --border:#e6eaf0;
-    --primary:#3b82f6; --primary-dark:#2563eb; --green:#22c55e; --red:#ef4444;
-    --yellow:#f59e0b; --blue:#3b82f6;
-    --shadow-sm:0 1px 2px rgba(20,30,50,.05); --shadow-md:0 4px 12px rgba(20,30,50,.08);
-    --radius:12px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text);
-         min-height:100vh; display:flex; flex-direction:column; font-size:14px; -webkit-font-smoothing:antialiased; }
-  .app-header { background:#0f172a; color:#fff; padding:14px 28px; display:flex; align-items:center; gap:16px; }
-  .logo { font-size:20px; font-weight:700; display:flex; align-items:center; gap:8px; flex:1; }
-  .logo-icon { width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#22c55e,#16a34a);
-               display:flex; align-items:center; justify-content:center; font-size:18px; }
-  .logo-text span { color:#22c55e; }
-  .header-actions { display:flex; gap:8px; }
-  .header-btn { background:rgba(255,255,255,.1); color:#fff; border:none; border-radius:8px; padding:8px 12px;
-                font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; transition:all .15s; }
-  .header-btn:hover { background:rgba(255,255,255,.2); }
-
-  .app-nav { background:#fff; padding:0 28px; display:flex; gap:4px; border-bottom:1px solid var(--border); overflow-x:auto; }
-  .nav-btn { background:transparent; border:none; color:var(--muted); padding:14px 16px; cursor:pointer;
-             font-size:14px; font-weight:500; border-bottom:2px solid transparent; transition:all .15s;
-             white-space:nowrap; font-family:inherit; }
-  .nav-btn:hover { color:var(--text); }
-  .nav-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
-  .nav-badge { display:inline-block; background:var(--red); color:#fff; font-size:11px; font-weight:600;
-               padding:2px 7px; border-radius:10px; margin-left:6px; vertical-align:middle; }
-
-  .app-main { flex:1; padding:24px 28px; max-width:1400px; width:100%; margin:0 auto; }
-  .screen { display:none; } .screen.active { display:block; }
-  .screen h2 { font-size:20px; font-weight:600; margin-bottom:16px; }
-
-  .btn { padding:9px 16px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:500;
-         font-family:inherit; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
-  .btn-primary { background:var(--primary); color:#fff; } .btn-primary:hover { background:var(--primary-dark); }
-  .btn-secondary { background:#eef1f6; color:var(--text); } .btn-secondary:hover { background:#e2e6ee; }
-  .btn-success { background:var(--green); color:#fff; } .btn-success:hover { filter:brightness(.95); }
-  .btn-danger { background:var(--red); color:#fff; }
-  .btn-icon { background:#eef1f6; color:var(--text); padding:6px 10px; border:none; border-radius:6px;
-              cursor:pointer; font-size:12px; font-weight:500; font-family:inherit; }
-  .btn-icon:hover { background:#e2e6ee; }
-  .btn-danger-outline { background:#fee2e2; color:#991b1b; padding:6px 10px; border:none; border-radius:6px;
-                        cursor:pointer; font-size:12px; font-weight:500; font-family:inherit; }
-  .btn-success-outline { background:#dcfce7; color:#166534; padding:6px 10px; border:none; border-radius:6px;
-                         cursor:pointer; font-size:12px; font-weight:500; font-family:inherit; }
-
-  .card { background:var(--card); border-radius:var(--radius); padding:20px;
-          box-shadow:var(--shadow-sm); border:1px solid var(--border); }
-
-  .home-top { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
-  .wallet { background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff; border-radius:var(--radius);
-            padding:14px 20px; display:flex; align-items:center; gap:12px; box-shadow:var(--shadow-md); min-width:260px; }
-  .wallet.negative { background:linear-gradient(135deg,#7f1d1d,#991b1b); }
-  .wallet-icon { font-size:26px; }
-  .wallet-label { font-size:11px; opacity:.7; text-transform:uppercase; letter-spacing:.5px; }
-  .wallet-balance { font-size:22px; font-weight:700; }
-  .wallet-sub { font-size:11px; opacity:.7; margin-top:2px; }
-
-  .filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px; padding:14px 16px;
-             background:var(--card); border-radius:var(--radius); border:1px solid var(--border); box-shadow:var(--shadow-sm); }
-  .filters label { font-size:12px; color:var(--muted); font-weight:500; }
-  select, input[type="text"], input[type="number"], input[type="date"], input[type="password"], textarea {
-    padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;
-    font-family:inherit; background:#fff; color:var(--text); outline:none; transition:border-color .15s;
-  }
-  select:focus, input:focus, textarea:focus { border-color:var(--primary); }
-
-  table { width:100%; border-collapse:collapse; background:var(--card); border-radius:var(--radius);
-          overflow:hidden; box-shadow:var(--shadow-sm); border:1px solid var(--border); }
-  thead { background:#f8fafc; }
-  th, td { padding:12px 14px; text-align:left; font-size:13px; border-bottom:1px solid var(--border); }
-  th { font-weight:600; color:var(--muted); text-transform:uppercase; font-size:11px; letter-spacing:.5px; }
-  tbody tr:last-child td { border-bottom:none; }
-  tbody tr:hover { background:#fafbfd; }
-  .debt { font-weight:600; } .debt.has-debt { color:var(--red); } .debt.no-debt { color:var(--green); }
-
-  .legend { display:flex; gap:16px; flex-wrap:wrap; padding:10px 16px; margin-bottom:16px;
-            background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
-            font-size:12px; color:var(--muted); }
-  .legend-item { display:inline-flex; align-items:center; gap:6px; }
-
-  .home-list { display:flex; flex-direction:column; gap:8px; }
-  .home-row { background:var(--card); border-radius:var(--radius); padding:12px 16px; display:flex;
-              align-items:center; gap:16px; box-shadow:var(--shadow-sm); border:1px solid var(--border); flex-wrap:wrap; }
-  .home-row-info { min-width:200px; flex:0 0 auto; }
-  .home-row-name { font-size:14px; font-weight:600; }
-  .admin-tag { display:inline-block; background:#fef3c7; color:#92400e; font-size:10px; font-weight:700;
-               padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:middle; }
-  .months-row { display:flex; gap:4px; flex-wrap:wrap; flex:1; }
-  .mini-badge { min-width:34px; padding:4px 6px; border-radius:6px; font-size:10px; font-weight:600;
-                text-align:center; color:#fff; }
-  .mini-badge.paid { background:var(--green); }
-  .mini-badge.unpaid { background:var(--red); }
-  .mini-badge.otp { background:var(--yellow); }
-  .mini-badge.kmd { background:var(--blue); }
-  .mini-badge.none { background:#cbd5e1; color:#64748b; }
-
-  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.5);
-                   backdrop-filter:blur(2px); z-index:100; align-items:center; justify-content:center; padding:20px; }
-  .modal-overlay.active { display:flex; }
-  .modal { background:#fff; border-radius:var(--radius); padding:24px; width:100%; max-width:600px;
-           max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(15,23,42,.25); }
-  .modal h3 { margin-bottom:16px; font-size:17px; font-weight:600; }
-  .modal label { display:block; margin-bottom:6px; font-size:12px; color:var(--muted); font-weight:500; }
-  .modal input, .modal select, .modal textarea { width:100%; margin-bottom:14px; padding:10px 12px; }
-  .modal textarea { min-height:120px; resize:vertical; }
-  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; flex-wrap:wrap; }
-  .modal-actions .spacer { flex:1; }
-
-  .months-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-  .month-box { border:1px solid var(--border); border-radius:10px; padding:10px; background:#fafbfd; }
-  .month-box-name { font-size:12px; font-weight:600; margin-bottom:8px; text-align:center; }
-  .month-statuses { display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
-  .status-btn { padding:6px 4px; border:none; border-radius:6px; cursor:pointer; font-size:11px;
-                font-weight:600; color:#fff; opacity:.35; transition:opacity .15s; font-family:inherit; }
-  .status-btn.active { opacity:1; box-shadow:0 2px 6px rgba(0,0,0,.15); }
-  .status-btn.paid { background:var(--green); } .status-btn.unpaid { background:var(--red); }
-  .status-btn.otp { background:var(--yellow); } .status-btn.kmd { background:var(--blue); }
-
-  .expenses-toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
-  .expense-months { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-top:24px; }
-  .expense-month-box { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); padding:14px; }
-  .expense-month-title { font-size:14px; font-weight:600; margin-bottom:10px; display:flex;
-                         justify-content:space-between; align-items:center; }
-  .expense-month-total { font-size:12px; color:var(--muted); font-weight:500; }
-  .expense-item { padding:8px 0; border-bottom:1px dashed var(--border); font-size:12px;
-                  display:flex; justify-content:space-between; gap:8px; align-items:center; }
-  .expense-item:last-child { border-bottom:none; }
-  .expense-item-price { font-weight:600; white-space:nowrap; }
-
-  .settings-block { margin-bottom:20px; }
-  .settings-block h3 { font-size:14px; font-weight:600; margin-bottom:10px; }
-  .settings-row { display:flex; gap:10px; flex-wrap:wrap; }
-  .settings-hint { margin-top:8px; font-size:12px; color:var(--green); min-height:16px; }
-
-  .receipt-thumb { max-width:70px; max-height:70px; border-radius:6px; cursor:pointer; border:1px solid var(--border);
-                   object-fit: cover; transition: transform .15s; }
-  .receipt-thumb:hover { transform: scale(1.05); }
-  .badge-status { display:inline-block; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; }
-  .badge-status.pending { background:#fef3c7; color:#92400e; }
-  .badge-status.approved { background:#dcfce7; color:#166534; }
-  .badge-status.rejected { background:#fee2e2; color:#991b1b; }
-  .badge-status.reason { background:#dbeafe; color:#1e40af; }
-
-  .suggestion-card { background:var(--card); border-radius:var(--radius); padding:14px 18px;
-                     border:1px solid var(--border); margin-bottom:10px; box-shadow:var(--shadow-sm); }
-  .suggestion-meta { font-size:12px; color:var(--muted); margin-bottom:6px; }
-
-  .loader { text-align:center; padding:40px; color:var(--muted); }
-  .empty { text-align:center; padding:20px; color:var(--muted); }
-
-  .file-input-wrap { position:relative; margin-bottom:14px; }
-  .file-input-wrap input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
-  .file-input-label { padding:12px; border:2px dashed var(--border); border-radius:10px; text-align:center;
-                      font-size:13px; color:var(--muted); background:#fafbfd; transition:all .15s; }
-  .file-input-wrap:hover .file-input-label { border-color:var(--primary); color:var(--primary); }
-  .file-preview { max-width:100%; border-radius:10px; margin-bottom:12px; display:none; }
-
-  .admin-list { display:grid; gap:10px; }
-  .admin-row { background:#fff; border:1px solid var(--border); border-radius:10px;
-               padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
-  .admin-row b { font-size:14px; }
-  .admin-row small { color:var(--muted); }
-
-  .info-article { background:#fff; border:1px solid var(--border); border-radius:10px;
-                  padding:14px 16px; margin-bottom:10px; }
-  .info-article h4 { font-size:14px; font-weight:600; margin-bottom:6px; }
-  .info-article p { font-size:13px; color:var(--muted); white-space:pre-wrap; line-height:1.5; }
-
-  .mobile-nav { display: none; }
-
-  @media (max-width:768px) {
-    body { padding-bottom: 68px; }
-    .app-main, .app-header, .app-nav { padding-left:16px; padding-right:16px; }
-    .app-header { padding-top:12px; padding-bottom:12px; }
-    .months-grid { grid-template-columns:1fr; }
-    .home-row-info { min-width:100%; }
-    .app-nav { display:none; }
-    .mobile-nav {
-      display: flex;
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: #fff;
-      border-top: 1px solid var(--border);
-      z-index: 50;
-      box-shadow: 0 -2px 10px rgba(20,30,50,.06);
-      padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
-      overflow-x: auto;
-    }
-    .mobile-nav::-webkit-scrollbar { display: none; }
-    .mobile-nav-btn {
-      flex: 1 0 auto; min-width: 62px;
-      display: flex; flex-direction: column; align-items: center; gap: 2px;
-      background: transparent; border: none; color: var(--muted);
-      padding: 6px 4px; font-size: 10px; font-weight: 500;
-      font-family: inherit; cursor: pointer; border-radius: 8px;
-      transition: all .15s; position: relative;
-    }
-    .mobile-nav-btn.active { color: var(--primary); background: rgba(59,130,246,.08); }
-    .mobile-nav-btn .icon { font-size: 20px; line-height: 1; }
-    .mobile-nav-btn .dot {
-      position: absolute; top: 4px; right: 14px;
-      min-width: 16px; height: 16px; border-radius: 8px; background: var(--red);
-      color: #fff; font-size: 10px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      padding: 0 4px;
-    }
+  :root{--bg:#f4f6fa;--card:#fff;--text:#1a2233;--muted:#6b7690;--border:#e6eaf0;--primary:#3b82f6;--primary-dark:#2563eb;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--shadow-sm:0 1px 2px rgba(20,30,50,.05);--shadow-md:0 4px 12px rgba(20,30,50,.08);--radius:12px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;font-size:14px;-webkit-font-smoothing:antialiased}
+  .app-header{background:#0f172a;color:#fff;padding:14px 28px;display:flex;align-items:center;gap:16px}
+  .logo{font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px;flex:1}
+  .logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .logo-text span{color:#22c55e}
+  .header-actions{display:flex;gap:8px;align-items:center}
+  .header-btn{background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;transition:all .15s}
+  .header-btn:hover{background:rgba(255,255,255,.2)}
+  .year-select{background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;outline:none}
+  .year-select option{background:#0f172a;color:#fff}
+  .app-nav{background:#fff;padding:0 28px;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto}
+  .nav-btn{background:transparent;border:none;color:var(--muted);padding:14px 16px;cursor:pointer;font-size:14px;font-weight:500;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;font-family:inherit}
+  .nav-btn:hover{color:var(--text)}
+  .nav-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+  .nav-badge{display:inline-block;background:var(--red);color:#fff;font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+  .app-main{flex:1;padding:24px 28px;max-width:1400px;width:100%;margin:0 auto}
+  .screen{display:none}.screen.active{display:block}
+  .screen h2{font-size:20px;font-weight:600;margin-bottom:16px}
+  .btn{padding:9px 16px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+  .btn-secondary{background:#eef1f6;color:var(--text)}.btn-secondary:hover{background:#e2e6ee}
+  .btn-success{background:var(--green);color:#fff}.btn-success:hover{filter:brightness(.95)}
+  .btn-danger{background:var(--red);color:#fff}
+  .btn-icon{background:#eef1f6;color:var(--text);padding:6px 10px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit}
+  .btn-icon:hover{background:#e2e6ee}
+  .btn-danger-outline{background:#fee2e2;color:#991b1b;padding:6px 10px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit}
+  .btn-success-outline{background:#dcfce7;color:#166534;padding:6px 10px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit}
+  .card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-sm);border:1px solid var(--border)}
+  .home-top{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+  .wallet{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-md);min-width:260px}
+  .wallet.negative{background:linear-gradient(135deg,#7f1d1d,#991b1b)}
+  .wallet-icon{font-size:26px}
+  .wallet-label{font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.5px}
+  .wallet-balance{font-size:22px;font-weight:700}
+  .wallet-sub{font-size:11px;opacity:.7;margin-top:2px}
+  .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;padding:14px 16px;background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+  .filters label{font-size:12px;color:var(--muted);font-weight:500}
+  select,input[type="text"],input[type="number"],input[type="date"],input[type="password"],textarea{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;color:var(--text);outline:none;transition:border-color .15s}
+  select:focus,input:focus,textarea:focus{border-color:var(--primary)}
+  .search-input{width:100%;margin-bottom:12px;padding:10px 14px;font-size:14px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);border:1px solid var(--border)}
+  thead{background:#f8fafc}
+  th,td{padding:12px 14px;text-align:left;font-size:13px;border-bottom:1px solid var(--border)}
+  th{font-weight:600;color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.5px}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fafbfd}
+  .debt{font-weight:600}.debt.has-debt{color:var(--red)}.debt.no-debt{color:var(--green)}
+  th[data-sort]{cursor:pointer;user-select:none}
+  th[data-sort]:hover{color:var(--primary)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;padding:10px 16px;margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);font-size:12px;color:var(--muted)}
+  .legend-item{display:inline-flex;align-items:center;gap:6px}
+  .home-list{display:flex;flex-direction:column;gap:8px}
+  .home-row{background:var(--card);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow-sm);border:1px solid var(--border);flex-wrap:wrap}
+  .home-row-info{min-width:200px;flex:0 0 auto}
+  .home-row-name{font-size:14px;font-weight:600}
+  .admin-tag{display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
+  .months-row{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+  .mini-badge{min-width:34px;padding:4px 6px;border-radius:6px;font-size:10px;font-weight:600;text-align:center;color:#fff}
+  .mini-badge.paid{background:var(--green)}.mini-badge.unpaid{background:var(--red)}.mini-badge.otp{background:var(--yellow)}.mini-badge.kmd{background:var(--blue)}.mini-badge.none{background:#cbd5e1;color:#64748b}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);z-index:100;align-items:center;justify-content:center;padding:20px}
+  .modal-overlay.active{display:flex}
+  .modal{background:#fff;border-radius:var(--radius);padding:24px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(15,23,42,.25)}
+  .modal h3{margin-bottom:16px;font-size:17px;font-weight:600}
+  .modal label{display:block;margin-bottom:6px;font-size:12px;color:var(--muted);font-weight:500}
+  .modal input,.modal select,.modal textarea{width:100%;margin-bottom:14px;padding:10px 12px}
+  .modal textarea{min-height:120px;resize:vertical}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+  .modal-actions .spacer{flex:1}
+  .months-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .month-box{border:1px solid var(--border);border-radius:10px;padding:10px;background:#fafbfd}
+  .month-box-name{font-size:12px;font-weight:600;margin-bottom:8px;text-align:center}
+  .month-statuses{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
+  .status-btn{padding:6px 4px;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;color:#fff;opacity:.35;transition:opacity .15s;font-family:inherit}
+  .status-btn.active{opacity:1;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+  .status-btn.paid{background:var(--green)}.status-btn.unpaid{background:var(--red)}
+  .status-btn.otp{background:var(--yellow)}.status-btn.kmd{background:var(--blue)}
+  .expenses-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .expense-months{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:24px}
+  .expense-month-box{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px}
+  .expense-month-title{font-size:14px;font-weight:600;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+  .expense-month-total{font-size:12px;color:var(--muted);font-weight:500}
+  .expense-item{padding:8px 0;border-bottom:1px dashed var(--border);font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .expense-item:last-child{border-bottom:none}
+  .expense-item-price{font-weight:600;white-space:nowrap}
+  .settings-block{margin-bottom:20px}
+  .settings-block h3{font-size:14px;font-weight:600;margin-bottom:10px}
+  .settings-row{display:flex;gap:10px;flex-wrap:wrap}
+  .settings-hint{margin-top:8px;font-size:12px;color:var(--green);min-height:16px}
+  .receipt-thumb{max-width:70px;max-height:70px;border-radius:6px;cursor:pointer;border:1px solid var(--border);object-fit:cover;transition:transform .15s}
+  .receipt-thumb:hover{transform:scale(1.05)}
+  .badge-status{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600}
+  .badge-status.pending{background:#fef3c7;color:#92400e}
+  .badge-status.approved{background:#dcfce7;color:#166534}
+  .badge-status.rejected{background:#fee2e2;color:#991b1b}
+  .badge-status.reason{background:#dbeafe;color:#1e40af}
+  .dispute-icon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;background:#fed7aa;color:#9a3412;font-weight:700;font-size:16px;margin-right:6px}
+  .suggestion-card{background:var(--card);border-radius:var(--radius);padding:14px 18px;border:1px solid var(--border);margin-bottom:10px;box-shadow:var(--shadow-sm)}
+  .suggestion-meta{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .loader{text-align:center;padding:40px;color:var(--muted)}
+  .empty{text-align:center;padding:20px;color:var(--muted)}
+  .file-input-wrap{position:relative;margin-bottom:14px}
+  .file-input-wrap input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .file-input-label{padding:12px;border:2px dashed var(--border);border-radius:10px;text-align:center;font-size:13px;color:var(--muted);background:#fafbfd;transition:all .15s}
+  .file-input-wrap:hover .file-input-label{border-color:var(--primary);color:var(--primary)}
+  .file-preview{max-width:100%;border-radius:10px;margin-bottom:12px;display:none}
+  .admin-list{display:grid;gap:10px}
+  .admin-row{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+  .admin-row b{font-size:14px}
+  .admin-row small{color:var(--muted)}
+  .info-article{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+  .info-article h4{font-size:14px;font-weight:600;margin-bottom:6px}
+  .info-article p{font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.5}
+  .mobile-nav{display:none}
+  @media (max-width:768px){
+    body{padding-bottom:68px}
+    .app-main,.app-header,.app-nav{padding-left:16px;padding-right:16px}
+    .app-header{padding-top:12px;padding-bottom:12px}
+    .months-grid{grid-template-columns:1fr}
+    .home-row-info{min-width:100%}
+    .app-nav{display:none}
+    .mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);z-index:50;box-shadow:0 -2px 10px rgba(20,30,50,.06);padding:6px 4px calc(6px + env(safe-area-inset-bottom));overflow-x:auto}
+    .mobile-nav::-webkit-scrollbar{display:none}
+    .mobile-nav-btn{flex:1 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;border:none;color:var(--muted);padding:6px 4px;font-size:10px;font-weight:500;font-family:inherit;cursor:pointer;border-radius:8px;transition:all .15s;position:relative}
+    .mobile-nav-btn.active{color:var(--primary);background:rgba(59,130,246,.08)}
+    .mobile-nav-btn .icon{font-size:20px;line-height:1}
+    .mobile-nav-btn .dot{position:absolute;top:4px;right:14px;min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
   }
 </style>
 </head>
@@ -229,6 +149,7 @@
     <div class="logo-text">Go<span>Cash</span> · Админ</div>
   </div>
   <div class="header-actions">
+    <select class="year-select" id="year-select" title="Год"></select>
     <button class="header-btn" id="btn-refresh">🔄 Обновить</button>
   </div>
 </header>
@@ -239,6 +160,7 @@
   <button class="nav-btn" data-screen="users">Пользователи</button>
   <button class="nav-btn" data-screen="receipts">Чеки<span class="nav-badge" id="receipts-badge" style="display:none;">0</span></button>
   <button class="nav-btn" data-screen="expense-requests">Заявки</button>
+  <button class="nav-btn" data-screen="disputes">Оспаривания<span class="nav-badge" id="disputes-badge" style="display:none;">0</span></button>
   <button class="nav-btn" data-screen="suggestions">Предложения</button>
   <button class="nav-btn" data-screen="info">Инфо</button>
   <button class="nav-btn" data-screen="history">История</button>
@@ -262,7 +184,7 @@
       <div class="wallet" id="wallet">
         <div class="wallet-icon">👛</div>
         <div>
-          <div class="wallet-label">Баланс</div>
+          <div class="wallet-label">Баланс за <span id="wallet-year-label">2026</span></div>
           <div class="wallet-balance" id="wallet-balance">0 ₽</div>
           <div class="wallet-sub" id="wallet-sub"></div>
         </div>
@@ -302,6 +224,7 @@
 
   <section class="screen" id="screen-users">
     <h2>Пользователи</h2>
+    <input type="text" class="search-input" id="user-search" placeholder="🔍 Поиск по ФИО...">
     <div class="expenses-toolbar">
       <button class="btn btn-primary" id="btn-add-user">+ Добавить пользователя</button>
       <button class="btn btn-success" id="btn-import-excel">📊 Загрузить Excel</button>
@@ -312,7 +235,9 @@
         <th>ФИО</th>
         <th>Код доступа</th>
         <th style="width:170px;">Последний вход</th>
-        <th>Задолженность</th>
+        <th data-sort="debt" style="white-space:nowrap;">
+          Задолженность <span id="debt-sort-arrow" style="color:var(--muted);font-size:14px;">↕</span>
+        </th>
         <th style="width:150px;">Инфо</th>
       </tr></thead>
       <tbody id="users-tbody"></tbody>
@@ -342,6 +267,20 @@
         <th>Статус</th><th style="width:200px;">Действия</th>
       </tr></thead>
       <tbody id="requests-tbody"></tbody>
+    </table>
+  </section>
+
+  <section class="screen" id="screen-disputes">
+    <h2>Оспаривания задолженности</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">
+      Пользователи оспаривают долги. При одобрении месяц получает статус <b>Отп</b> или <b>Кмд</b>.
+    </p>
+    <table>
+      <thead><tr>
+        <th style="width:160px;">Дата</th><th>Пользователь</th><th>Месяц</th>
+        <th>Причина</th><th>Статус</th><th style="width:200px;">Действия</th>
+      </tr></thead>
+      <tbody id="disputes-tbody"></tbody>
     </table>
   </section>
 
@@ -433,7 +372,7 @@
       <div class="settings-block">
         <h3 style="color:var(--red);">⚠️ Опасная зона</h3>
         <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-          Удаляет <b>все чеки оплат</b>, <b>платежи</b>, <b>предложения</b>, <b>заявки</b>, <b>уведомления</b>.
+          Удаляет <b>все чеки оплат</b>, <b>платежи</b>, <b>предложения</b>, <b>заявки</b>, <b>уведомления</b>, <b>оспаривания</b>.
         </p>
         <button class="btn btn-danger" id="btn-danger-reset">🗑 Удалить историю и заявки</button>
       </div>
@@ -586,7 +525,6 @@
 
   const SUPABASE_URL = 'https://cmybjfrvabcumkolsxmj.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNteWJqZnJ2YWJjdW1rb2xzeG1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMjEwNDUsImV4cCI6MjEwNDg5NzA0NX0.rj5ld_t0mRXIar9TAnq4yW5TSLxZGR0kdSLaROFkhYo';
-
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -595,38 +533,42 @@
   const DANGER_PASSWORD = 'Никита1999';
 
   const state = {
-    monthlyFee: 1000,
+    monthlyFee: 1000, currentYear: new Date().getFullYear(),
     users: [], admins: [], expenses: [], payments: [],
-    expenseRequests: [], suggestions: [], info: []
+    expenseRequests: [], suggestions: [], info: [], disputes: []
   };
   let editingId = null, infoId = null, editMode = false, deleteExpenseMode = false;
-  let pendingReceiptFile = null;
-  let importRows = [];
-  let editingInfoId = null;
+  let pendingReceiptFile = null, importRows = [], editingInfoId = null;
+  let debtSortDir = 'none';
+  let userSearchQuery = '';
 
+  // ===== Саратов =====
   function getSaratovNow() {
-    const fmt = new Intl.DateTimeFormat('ru-RU', {
-      timeZone:'Europe/Saratov', year:'numeric', month:'numeric', day:'numeric'
-    });
+    const fmt = new Intl.DateTimeFormat('ru-RU', {timeZone:'Europe/Saratov',year:'numeric',month:'numeric',day:'numeric'});
     const o = {}; fmt.formatToParts(new Date()).forEach(p => o[p.type] = p.value);
     return { year:+o.year, month:+o.month-1, day:+o.day };
   }
   function isCurrentMonthBillable() { return getSaratovNow().day >= 15; }
-  function effectiveStatus(user, mIdx) {
+  function getViewYear() { return state.currentYear; }
+
+  function effectiveStatus(user, mIdx, year) {
     const s = user.paid[mIdx];
     if (s) return s;
+    // «Прошедшее» правило — только для текущего года
     const now = getSaratovNow();
-    if (mIdx < now.month) return 'unpaid';
-    if (mIdx === now.month && isCurrentMonthBillable()) return 'unpaid';
+    if (year === now.year) {
+      if (mIdx < now.month) return 'unpaid';
+      if (mIdx === now.month && isCurrentMonthBillable()) return 'unpaid';
+    } else if (year < now.year) {
+      return 'unpaid';
+    }
     return null;
   }
 
   function fmtDateTime(iso) {
     if (!iso) return '—';
-    const d = new Date(iso);
-    const now = new Date();
-    const diffMs = now - d;
-    const diffMin = Math.floor(diffMs / 60000);
+    const d = new Date(iso), now = new Date();
+    const diffMin = Math.floor((now - d) / 60000);
     if (diffMin < 1) return 'только что';
     if (diffMin < 60) return diffMin + ' мин назад';
     const diffH = Math.floor(diffMin / 60);
@@ -636,16 +578,18 @@
     return d.toLocaleDateString('ru-RU');
   }
 
+  // ===== Загрузка =====
   async function loadAll() {
-    const [u, adm, m, e, p, er, s, inf, c] = await Promise.all([
+    const [u, adm, m, e, p, er, s, inf, dis, c] = await Promise.all([
       db.from('users').select('*').order('fio'),
       db.from('admins').select('*').order('fio'),
-      db.from('months').select('*'),
+      db.from('months').select('*').eq('year', getViewYear()),
       db.from('expenses').select('*').order('date', { ascending:false }),
       db.from('payments').select('*').order('created_at', { ascending:false }),
       db.from('expense_requests').select('*').order('created_at', { ascending:false }),
       db.from('suggestions').select('*').order('created_at', { ascending:false }),
       db.from('info_articles').select('*').order('sort_order'),
+      db.from('disputes').select('*').order('created_at', { ascending:false }),
       db.from('config').select('*').eq('id',1).maybeSingle()
     ]);
     state.monthlyFee = (c.data && c.data.monthly_fee) || 1000;
@@ -655,13 +599,14 @@
     state.suggestions = s.data || [];
     state.admins = adm.data || [];
     state.info = inf.data || [];
+    state.disputes = dis.data || [];
     state.users = (u.data || []).map(x => ({ ...x, paid: Array(12).fill(null) }));
-    const year = getSaratovNow().year;
     (m.data || []).forEach(row => {
       const usr = state.users.find(x => x.id === row.user_id);
-      if (usr && row.year === year) usr.paid[row.month] = row.status;
+      if (usr) usr.paid[row.month] = row.status;
     });
     document.getElementById('input-fee').value = state.monthlyFee;
+    document.getElementById('wallet-year-label').textContent = getViewYear();
     updateBadges();
     renderAdminList();
   }
@@ -669,23 +614,25 @@
   function updateBadges() {
     const n = state.payments.filter(p => p.status === 'pending').length
             + state.expenseRequests.filter(r => r.status === 'pending').length;
+    const dn = state.disputes.filter(d => d.status === 'pending').length;
     const b = document.getElementById('receipts-badge');
     const bm = document.getElementById('mobile-receipts-badge');
-    if (n > 0) {
-      b.textContent = n; b.style.display = 'inline-block';
-      bm.textContent = n; bm.style.display = 'flex';
-    } else {
-      b.style.display = 'none';
-      bm.style.display = 'none';
-    }
+    if (n > 0) { b.textContent = n; b.style.display = 'inline-block'; bm.textContent = n; bm.style.display = 'flex'; }
+    else { b.style.display = 'none'; bm.style.display = 'none'; }
+    const db_ = document.getElementById('disputes-badge');
+    if (dn > 0) { db_.textContent = dn; db_.style.display = 'inline-block'; }
+    else db_.style.display = 'none';
   }
 
   function calcDebt(user) {
+    const year = getViewYear();
     const now = getSaratovNow();
-    const last = isCurrentMonthBillable() ? now.month : now.month - 1;
+    let last = 11;
+    if (year === now.year) last = isCurrentMonthBillable() ? now.month : now.month - 1;
+    else if (year > now.year) return 0;
     if (last < 0) return 0;
     let n = 0;
-    for (let i = 0; i <= last; i++) if (effectiveStatus(user, i) === 'unpaid') n++;
+    for (let i = 0; i <= last; i++) if (effectiveStatus(user, i, year) === 'unpaid') n++;
     return n * state.monthlyFee;
   }
   function calcIncome() {
@@ -693,13 +640,17 @@
     state.users.forEach(u => u.paid.forEach(s => { if (s === 'paid') n++; }));
     return n * state.monthlyFee;
   }
-  function calcSpent() { return state.expenses.reduce((s,e) => s + (Number(e.qty)||0)*(Number(e.price)||0), 0); }
+  function calcSpent() {
+    const y = getViewYear();
+    return state.expenses.filter(e => new Date(e.date).getFullYear() === y)
+      .reduce((s,e) => s + (Number(e.qty)||0)*(Number(e.price)||0), 0);
+  }
   function calcBalance() { return calcIncome() - calcSpent(); }
 
+  // ===== Навигация =====
   const navButtons = document.querySelectorAll('.nav-btn');
   const mobileNavButtons = document.querySelectorAll('.mobile-nav-btn');
   const screens = document.querySelectorAll('.screen');
-
   function showScreen(name) {
     screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
     navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
@@ -710,6 +661,7 @@
     if (name === 'users') renderUsers();
     if (name === 'receipts') renderReceipts();
     if (name === 'expense-requests') renderRequests();
+    if (name === 'disputes') renderDisputes();
     if (name === 'suggestions') renderSuggestions();
     if (name === 'info') renderInfoArticles();
     if (name === 'history') renderHistory();
@@ -722,6 +674,7 @@
   document.querySelectorAll('[data-close-modal]').forEach(b => b.addEventListener('click', function(e){ closeModal(e.target); }));
   document.querySelectorAll('.modal-overlay').forEach(ov => ov.addEventListener('click', function(e){ if (e.target === ov) ov.classList.remove('active'); }));
 
+  // ===== ГЛАВНАЯ =====
   function renderHome() {
     const bal = calcBalance();
     document.getElementById('wallet-balance').textContent = bal.toLocaleString('ru-RU') + ' ₽';
@@ -732,14 +685,15 @@
     list.innerHTML = '';
     const fM = document.getElementById('filter-month').value;
     const fS = document.getElementById('filter-status').value;
-    const sorted = state.users.slice().sort(function(a,b){ return a.fio.localeCompare(b.fio,'ru'); });
+    const sorted = state.users.slice().sort((a,b) => a.fio.localeCompare(b.fio,'ru'));
     const adminNames = state.admins.map(a => a.fio.toLowerCase());
+    const year = getViewYear();
 
     let shown = 0;
-    sorted.forEach(function(u){
+    sorted.forEach(u => {
       if (fM !== 'all') {
         const idx = Number(fM);
-        const st = effectiveStatus(u, idx);
+        const st = effectiveStatus(u, idx, year);
         if (fS !== 'all') {
           const wanted = fS === 'none' ? null : fS;
           if (st !== wanted) return;
@@ -753,8 +707,8 @@
         (isAdmin ? ' <span class="admin-tag">АДМИН</span>' : '') + '</div>';
       const monthsRow = document.createElement('div');
       monthsRow.className = 'months-row';
-      MONTHS_SHORT.forEach(function(mn, i){
-        const st = effectiveStatus(u, i);
+      MONTHS_SHORT.forEach((mn, i) => {
+        const st = effectiveStatus(u, i, year);
         const b = document.createElement('div');
         b.className = 'mini-badge ' + (st || 'none');
         b.title = MONTHS[i] + ': ' + (st ? STATUS_LABELS[st] : 'Не отмечено');
@@ -769,18 +723,26 @@
 
   (function initMonthFilter(){
     const sel = document.getElementById('filter-month');
-    MONTHS.forEach(function(m,i){
-      const o = document.createElement('option'); o.value = i; o.textContent = m; sel.appendChild(o);
-    });
+    MONTHS.forEach((m,i) => { const o = document.createElement('option'); o.value = i; o.textContent = m; sel.appendChild(o); });
     sel.value = String(getSaratovNow().month);
   })();
   document.getElementById('filter-month').addEventListener('change', renderHome);
   document.getElementById('filter-status').addEventListener('change', renderHome);
 
+  // ===== ПОЛЬЗОВАТЕЛИ =====
   function renderUsers() {
     const tbody = document.getElementById('users-tbody');
     tbody.innerHTML = '';
-    state.users.forEach(function(u){
+
+    let users = state.users.slice();
+    if (userSearchQuery) {
+      const q = userSearchQuery.toLowerCase();
+      users = users.filter(u => (u.fio || '').toLowerCase().includes(q));
+    }
+    if (debtSortDir === 'asc') users.sort((a,b) => calcDebt(a) - calcDebt(b));
+    else if (debtSortDir === 'desc') users.sort((a,b) => calcDebt(b) - calcDebt(a));
+
+    users.forEach(u => {
       const debt = calcDebt(u);
       const tr = document.createElement('tr');
       tr.innerHTML =
@@ -792,8 +754,25 @@
         (editMode ? ' <button class="btn-icon" data-edit="' + u.id + '">Ред.</button>' : '') + '</td>';
       tbody.appendChild(tr);
     });
-    if (!state.users.length) tbody.innerHTML = '<tr><td colspan="5" class="empty">Пока нет пользователей</td></tr>';
+    if (!users.length) tbody.innerHTML = '<tr><td colspan="5" class="empty">Нет пользователей</td></tr>';
+
+    const arrow = document.getElementById('debt-sort-arrow');
+    if (arrow) {
+      arrow.textContent = debtSortDir === 'asc' ? '↑' : debtSortDir === 'desc' ? '↓' : '↕';
+    }
   }
+
+  document.getElementById('user-search').addEventListener('input', function(e){
+    userSearchQuery = e.target.value.trim();
+    renderUsers();
+  });
+
+  document.querySelector('th[data-sort="debt"]').addEventListener('click', function(){
+    if (debtSortDir === 'none') debtSortDir = 'desc';
+    else if (debtSortDir === 'desc') debtSortDir = 'asc';
+    else debtSortDir = 'none';
+    renderUsers();
+  });
 
   document.getElementById('btn-add-user').addEventListener('click', function(){
     document.getElementById('input-fio').value = '';
@@ -804,7 +783,7 @@
     const fio = document.getElementById('input-fio').value.trim();
     const code = document.getElementById('input-code').value.trim();
     if (!fio || !code) { alert('Заполните все поля'); return; }
-    const res = await db.from('users').insert({ fio: fio, code: code });
+    const res = await db.from('users').insert({ fio, code });
     if (res.error) { alert('Ошибка: ' + res.error.message); return; }
     await loadAll();
     renderUsers(); renderHome();
@@ -817,7 +796,7 @@
     const ed = e.target.closest('[data-edit]');
     if (ed) {
       editingId = Number(ed.dataset.edit);
-      const u = state.users.find(function(x){ return x.id === editingId; });
+      const u = state.users.find(x => x.id === editingId);
       document.getElementById('edit-fio').value = u.fio;
       document.getElementById('edit-code').value = u.code;
       openModal('modal-edit');
@@ -825,24 +804,24 @@
   });
 
   function renderInfo() {
-    const user = state.users.find(function(u){ return u.id === infoId; });
+    const user = state.users.find(u => u.id === infoId);
     if (!user) return;
     document.getElementById('info-title').textContent = user.fio + ' (' + user.code + ')';
     const grid = document.getElementById('months-grid');
     grid.innerHTML = '';
-    MONTHS.forEach(function(name, i){
+    const year = getViewYear();
+    MONTHS.forEach((name, i) => {
       const box = document.createElement('div');
       box.className = 'month-box';
       box.innerHTML = '<div class="month-box-name">' + name + '</div>';
       const sts = document.createElement('div');
       sts.className = 'month-statuses';
-      ['paid','unpaid','otp','kmd'].forEach(function(st){
+      ['paid','unpaid','otp','kmd'].forEach(st => {
         const b = document.createElement('button');
         b.className = 'status-btn ' + st + (user.paid[i]===st ? ' active' : '');
         b.textContent = STATUS_LABELS[st];
         b.addEventListener('click', async function(){
           const newStatus = user.paid[i] === st ? null : st;
-          const year = getSaratovNow().year;
           if (newStatus === null) {
             await db.from('months').delete().match({ user_id: user.id, year: year, month: i });
           } else {
@@ -874,7 +853,7 @@
     const fio = document.getElementById('edit-fio').value.trim();
     const code = document.getElementById('edit-code').value.trim();
     if (!fio || !code) { alert('Заполните все поля'); return; }
-    const res = await db.from('users').update({ fio: fio, code: code }).eq('id', editingId);
+    const res = await db.from('users').update({ fio, code }).eq('id', editingId);
     if (res.error) { alert('Ошибка: ' + res.error.message); return; }
     await loadAll();
     renderUsers(); renderHome();
@@ -904,8 +883,6 @@
     if (!file) return;
     document.getElementById('excel-file-label').textContent = '📎 ' + file.name;
     document.getElementById('excel-hint').textContent = '';
-    document.getElementById('excel-hint').style.color = 'var(--muted)';
-
     try {
       const rows = await parseExcel(file);
       if (!rows.length) {
@@ -916,8 +893,7 @@
       const existingCodes = new Set(state.users.map(u => (u.code || '').trim().toLowerCase()));
       const existingFios = new Set(state.users.map(u => (u.fio || '').trim().toLowerCase()));
       const seenCodes = new Set();
-
-      importRows = rows.map(function(r){
+      importRows = rows.map(r => {
         const codeKey = r.code.trim().toLowerCase();
         const fioKey = r.fio.trim().toLowerCase();
         let status = 'ok', error = '';
@@ -926,12 +902,12 @@
         else if (existingFios.has(fioKey)) { status = 'skip'; error = 'ФИО уже есть'; }
         else if (seenCodes.has(codeKey)) { status = 'skip'; error = 'Дубль в файле'; }
         else { seenCodes.add(codeKey); }
-        return { fio: r.fio.trim(), code: r.code.trim(), status: status, error: error };
+        return { fio: r.fio.trim(), code: r.code.trim(), status, error };
       });
       renderExcelPreview();
     } catch (err) {
       console.error(err);
-      document.getElementById('excel-hint').textContent = 'Ошибка чтения файла: ' + (err.message || err);
+      document.getElementById('excel-hint').textContent = 'Ошибка чтения: ' + (err.message || err);
       document.getElementById('excel-hint').style.color = 'var(--red)';
     }
   });
@@ -941,7 +917,7 @@
     if (isCsv) {
       const buf = await file.arrayBuffer();
       let text = decodeCsvBuffer(buf).replace(/^\uFEFF/, '');
-      const lines = text.split(/\r?\n/).filter(function(l){ return l.trim(); });
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
       const rows = [];
       for (let i = 1; i < lines.length; i++) {
         const parts = parseCsvLine(lines[i]);
@@ -949,48 +925,35 @@
       }
       return rows;
     }
-    if (typeof XLSX === 'undefined') throw new Error('Библиотека SheetJS не загрузилась');
+    if (typeof XLSX === 'undefined') throw new Error('SheetJS не загружен');
     const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, { type: 'array' });
+    const wb = XLSX.read(buf, { type:'array' });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: '' });
+    const data = XLSX.utils.sheet_to_json(ws, { header:1, blankrows:false, defval:'' });
     const rows = [];
     for (let i = 1; i < data.length; i++) {
       const r = data[i];
       if (!r || r.length < 2) continue;
-      const fio = String(r[0] || '').trim();
-      const code = String(r[1] || '').trim();
-      if (fio || code) rows.push({ fio: fio, code: code });
+      const fio = String(r[0] || '').trim(), code = String(r[1] || '').trim();
+      if (fio || code) rows.push({ fio, code });
     }
     return rows;
   }
-
   function decodeCsvBuffer(buf) {
     const bytes = new Uint8Array(buf);
-    if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
-      return new TextDecoder('utf-8').decode(buf);
-    }
-    if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
-      return new TextDecoder('utf-16le').decode(buf);
-    }
-    if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
-      return new TextDecoder('utf-16be').decode(buf);
-    }
+    if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) return new TextDecoder('utf-8').decode(buf);
+    if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) return new TextDecoder('utf-16le').decode(buf);
+    if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) return new TextDecoder('utf-16be').decode(buf);
     try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
     catch (e) { return new TextDecoder('windows-1251').decode(buf); }
   }
-
   function parseCsvLine(line) {
-    const result = [];
-    let cur = '', inQuotes = false;
+    const result = []; let cur = '', inQuotes = false;
     for (let i = 0; i < line.length; i++) {
       const ch = line[i];
-      if (ch === '"') {
-        if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
-        else inQuotes = !inQuotes;
-      } else if ((ch === ',' || ch === ';' || ch === '\t') && !inQuotes) {
-        result.push(cur); cur = '';
-      } else cur += ch;
+      if (ch === '"') { if (inQuotes && line[i+1] === '"') { cur += '"'; i++; } else inQuotes = !inQuotes; }
+      else if ((ch === ',' || ch === ';' || ch === '\t') && !inQuotes) { result.push(cur); cur = ''; }
+      else cur += ch;
     }
     result.push(cur);
     return result;
@@ -1005,7 +968,7 @@
     const skipCount = importRows.filter(r => r.status === 'skip').length;
     const errCount = importRows.filter(r => r.status === 'error').length;
     countEl.textContent = importRows.length;
-    importRows.forEach(function(r){
+    importRows.forEach(r => {
       const tr = document.createElement('tr');
       let badge = '';
       if (r.status === 'ok') badge = '<span style="color:var(--green);font-weight:600;">✓ Новый</span>';
@@ -1031,36 +994,33 @@
   document.getElementById('btn-import-confirm').addEventListener('click', async function(){
     const toImport = importRows.filter(r => r.status === 'ok');
     if (!toImport.length) return;
-    const btn = this;
-    btn.disabled = true; btn.textContent = 'Импортируем…';
+    const btn = this; btn.disabled = true; btn.textContent = 'Импортируем…';
     try {
-      const payload = toImport.map(function(r){ return { fio: r.fio, code: r.code }; });
+      const payload = toImport.map(r => ({ fio: r.fio, code: r.code }));
       const res = await db.from('users').insert(payload);
       if (res.error) throw res.error;
       await loadAll();
       renderUsers(); renderHome();
       closeModal(document.getElementById('btn-import-confirm'));
-      alert('Импортировано пользователей: ' + toImport.length);
+      alert('Импортировано: ' + toImport.length);
     } catch (err) {
       console.error(err);
       document.getElementById('excel-hint').textContent = 'Ошибка: ' + (err.message || 'неизвестная');
       document.getElementById('excel-hint').style.color = 'var(--red)';
-    } finally {
-      btn.disabled = false; btn.textContent = 'Импортировать';
-    }
+    } finally { btn.disabled = false; btn.textContent = 'Импортировать'; }
   });
 
+  // ===== РАСХОДЫ =====
   function renderExpenses() {
     const tbody = document.getElementById('expenses-tbody');
     tbody.innerHTML = '';
     document.getElementById('expense-actions-col').textContent = deleteExpenseMode ? 'Действия' : '';
-    const sorted = state.expenses.slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
-
-    sorted.forEach(function(e){
+    const y = getViewYear();
+    const sorted = state.expenses.filter(e => new Date(e.date).getFullYear() === y).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    sorted.forEach(e => {
       const sum = (Number(e.qty)||0)*(Number(e.price)||0);
       const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td>' + (e.date || '') + '</td>' +
+      tr.innerHTML = '<td>' + (e.date || '') + '</td>' +
         '<td>' + escapeHtml(e.name) + '</td>' +
         '<td>' + e.qty + '</td>' +
         '<td>' + (Number(e.price)||0).toLocaleString('ru-RU') + ' ₽</td>' +
@@ -1069,24 +1029,23 @@
         '<td>' + (deleteExpenseMode ? '<button class="btn-danger-outline" data-del-exp="' + e.id + '">🗑</button>' : '') + '</td>';
       tbody.appendChild(tr);
     });
-    if (!state.expenses.length) tbody.innerHTML = '<tr><td colspan="7" class="empty">Расходов пока нет</td></tr>';
+    if (!sorted.length) tbody.innerHTML = '<tr><td colspan="7" class="empty">Расходов за ' + y + ' год нет</td></tr>';
 
     const box = document.getElementById('expense-months');
     box.innerHTML = '';
-    const currentYear = getSaratovNow().year;
     let anyShown = false;
-    MONTHS.forEach(function(name, mi){
-      const items = state.expenses.filter(function(e){
+    MONTHS.forEach((name, mi) => {
+      const items = state.expenses.filter(e => {
         const d = new Date(e.date);
-        return d.getFullYear() === currentYear && d.getMonth() === mi;
+        return d.getFullYear() === y && d.getMonth() === mi;
       });
       if (!items.length) return;
       anyShown = true;
-      const total = items.reduce(function(s,e){ return s + (Number(e.qty)||0)*(Number(e.price)||0); }, 0);
+      const total = items.reduce((s,e) => s + (Number(e.qty)||0)*(Number(e.price)||0), 0);
       const div = document.createElement('div');
       div.className = 'expense-month-box';
       div.innerHTML = '<div class="expense-month-title"><span>' + name + '</span><span class="expense-month-total">' + total.toLocaleString('ru-RU') + ' ₽</span></div>';
-      items.forEach(function(e){
+      items.forEach(e => {
         const sum = (Number(e.qty)||0)*(Number(e.price)||0);
         const r = document.createElement('div');
         r.className = 'expense-item';
@@ -1116,7 +1075,7 @@
     pendingReceiptFile = f;
     document.getElementById('exp-receipt-label').textContent = '📎 ' + f.name;
     const reader = new FileReader();
-    reader.onload = function(ev){
+    reader.onload = ev => {
       const img = document.getElementById('exp-receipt-preview');
       img.src = ev.target.result; img.style.display = 'block';
     };
@@ -1129,8 +1088,7 @@
     const qty = Number(document.getElementById('exp-qty').value) || 1;
     const price = Number(document.getElementById('exp-price').value) || 0;
     if (!date || !name) { alert('Заполните дату и название'); return; }
-    const btn = document.getElementById('btn-save-expense');
-    btn.disabled = true; btn.textContent = 'Сохраняем…';
+    const btn = this; btn.disabled = true; btn.textContent = 'Сохраняем…';
     let receipt_url = null, receipt_path = null;
     try {
       if (pendingReceiptFile) {
@@ -1141,18 +1099,14 @@
         receipt_path = path;
         receipt_url = db.storage.from('expense-receipts').getPublicUrl(path).data.publicUrl;
       }
-      const ins = await db.from('expenses').insert({
-        date: date, name: name, qty: qty, price: price,
-        receipt_url: receipt_url, receipt_path: receipt_path
-      });
+      const ins = await db.from('expenses').insert({ date, name, qty, price, receipt_url, receipt_path });
       if (ins.error) throw ins.error;
       await loadAll();
       renderExpenses(); renderHome();
       closeModal(document.getElementById('btn-save-expense'));
       pendingReceiptFile = null;
-    } catch (err) {
-      console.error(err); alert('Ошибка: ' + (err.message || 'неизвестная'));
-    } finally { btn.disabled = false; btn.textContent = 'Сохранить'; }
+    } catch (err) { console.error(err); alert('Ошибка: ' + (err.message || 'неизвестная')); }
+    finally { btn.disabled = false; btn.textContent = 'Сохранить'; }
   });
 
   const delModeBtn = document.getElementById('btn-delete-mode');
@@ -1170,10 +1124,8 @@
     if (!d) return;
     if (!confirm('Удалить расход?')) return;
     const id = Number(d.dataset.delExp);
-    const exp = state.expenses.find(function(x){ return x.id === id; });
-    if (exp && exp.receipt_path) {
-      await db.storage.from('expense-receipts').remove([exp.receipt_path]).catch(function(){});
-    }
+    const exp = state.expenses.find(x => x.id === id);
+    if (exp && exp.receipt_path) await db.storage.from('expense-receipts').remove([exp.receipt_path]).catch(()=>{});
     await db.from('expenses').delete().eq('id', id);
     await loadAll();
     renderExpenses(); renderHome();
@@ -1185,21 +1137,21 @@
     openModal('modal-receipt-view');
   }
 
+  // ===== ЧЕКИ ОПЛАТ =====
   function renderReceipts() {
     const tbody = document.getElementById('receipts-tbody');
     tbody.innerHTML = '';
-    const list = state.payments.slice().sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); });
+    const list = state.payments.slice().sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
     if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Пока нет заявок</td></tr>'; return; }
-    list.forEach(function(p){
-      const u = state.users.find(function(x){ return x.id === p.user_id; });
+    list.forEach(p => {
+      const u = state.users.find(x => x.id === p.user_id);
       let statusHtml = '';
       if (p.status === 'pending') statusHtml = '<span class="badge-status pending">⏳ На проверке</span>';
       if (p.status === 'reason') statusHtml = '<span class="badge-status reason">📌 ' + (p.reason==='otp'?'Отпуск':'Командировка') + '</span>';
       if (p.status === 'approved') statusHtml = '<span class="badge-status approved">✅ Одобрено</span>';
       if (p.status === 'rejected') statusHtml = '<span class="badge-status rejected">❌ Отклонено</span>';
       const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td>' + new Date(p.created_at).toLocaleString('ru-RU') + '</td>' +
+      tr.innerHTML = '<td>' + new Date(p.created_at).toLocaleString('ru-RU') + '</td>' +
         '<td>' + (u ? escapeHtml(u.fio) : '—') + '</td>' +
         '<td>' + MONTHS[p.month] + ' ' + p.year + '</td>' +
         '<td>' + statusHtml + '</td>' +
@@ -1215,19 +1167,12 @@
     const ap = e.target.closest('[data-approve]');
     if (ap) {
       const id = Number(ap.dataset.approve);
-      const p = state.payments.find(function(x){ return x.id === id; });
+      const p = state.payments.find(x => x.id === id);
       if (!p) return;
       if (!confirm('Одобрить заявку? Чек будет удалён с сервера.')) return;
-      await db.from('months').upsert(
-        { user_id: p.user_id, year: p.year, month: p.month, status: 'paid' },
-        { onConflict: 'user_id,year,month' }
-      );
-      await db.from('notifications').insert({
-        user_id: p.user_id,
-        type: 'payment_approved',
-        message: 'Ваш взнос за ' + MONTHS[p.month] + ' одобрен ✓'
-      });
-      if (p.receipt_path) await db.storage.from('receipts').remove([p.receipt_path]).catch(function(){});
+      await db.from('months').upsert({ user_id: p.user_id, year: p.year, month: p.month, status: 'paid' }, { onConflict:'user_id,year,month' });
+      await db.from('notifications').insert({ user_id: p.user_id, type:'payment_approved', message:'Ваш взнос за ' + MONTHS[p.month] + ' одобрен ✓' });
+      if (p.receipt_path) await db.storage.from('receipts').remove([p.receipt_path]).catch(()=>{});
       await db.from('payments').delete().eq('id', id);
       await loadAll();
       renderReceipts(); renderHome(); renderUsers();
@@ -1236,35 +1181,31 @@
     const rj = e.target.closest('[data-reject]');
     if (rj) {
       const id = Number(rj.dataset.reject);
-      const p = state.payments.find(function(x){ return x.id === id; });
+      const p = state.payments.find(x => x.id === id);
       if (!p) return;
       if (!confirm('Отклонить заявку? Чек будет удалён с сервера.')) return;
-      await db.from('notifications').insert({
-        user_id: p.user_id,
-        type: 'payment_rejected',
-        message: 'Ваш взнос за ' + MONTHS[p.month] + ' отклонён ✗'
-      });
-      if (p.receipt_path) await db.storage.from('receipts').remove([p.receipt_path]).catch(function(){});
+      await db.from('notifications').insert({ user_id: p.user_id, type:'payment_rejected', message:'Ваш взнос за ' + MONTHS[p.month] + ' отклонён ✗' });
+      if (p.receipt_path) await db.storage.from('receipts').remove([p.receipt_path]).catch(()=>{});
       await db.from('payments').delete().eq('id', id);
       await loadAll();
       renderReceipts();
     }
   });
 
+  // ===== ЗАЯВКИ НА РАСХОД =====
   function renderRequests() {
     const tbody = document.getElementById('requests-tbody');
     tbody.innerHTML = '';
-    const list = state.expenseRequests.slice().sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); });
+    const list = state.expenseRequests.slice().sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
     if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Пока нет заявок</td></tr>'; return; }
-    list.forEach(function(r){
-      const u = state.users.find(function(x){ return x.id === r.user_id; });
+    list.forEach(r => {
+      const u = state.users.find(x => x.id === r.user_id);
       let statusHtml = '';
       if (r.status === 'pending') statusHtml = '<span class="badge-status pending">⏳ На проверке</span>';
       if (r.status === 'approved') statusHtml = '<span class="badge-status approved">✅ Одобрено</span>';
       if (r.status === 'rejected') statusHtml = '<span class="badge-status rejected">❌ Отклонено</span>';
       const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td>' + (r.date || '') + '</td>' +
+      tr.innerHTML = '<td>' + (r.date || '') + '</td>' +
         '<td>' + (u ? escapeHtml(u.fio) : '—') + '</td>' +
         '<td>' + escapeHtml(r.name) + '</td>' +
         '<td>' + (Number(r.price)||0).toLocaleString('ru-RU') + ' ₽</td>' +
@@ -1281,18 +1222,11 @@
     const ap = e.target.closest('[data-approve-req]');
     if (ap) {
       const id = Number(ap.dataset.approveReq);
-      const r = state.expenseRequests.find(function(x){ return x.id === id; });
+      const r = state.expenseRequests.find(x => x.id === id);
       if (!r) return;
       if (!confirm('Одобрить? Расход будет добавлен (чек сохранится).')) return;
-      await db.from('expenses').insert({
-        date: r.date, name: r.name, qty: 1, price: r.price,
-        receipt_url: r.receipt_url, receipt_path: r.receipt_path
-      });
-      await db.from('notifications').insert({
-        user_id: r.user_id,
-        type: 'expense_approved',
-        message: 'Ваш расход «' + r.name + '» одобрен ✓'
-      });
+      await db.from('expenses').insert({ date: r.date, name: r.name, qty: 1, price: r.price, receipt_url: r.receipt_url, receipt_path: r.receipt_path });
+      await db.from('notifications').insert({ user_id: r.user_id, type:'expense_approved', message:'Ваш расход «' + r.name + '» одобрен ✓' });
       await db.from('expense_requests').delete().eq('id', id);
       await loadAll();
       renderRequests(); renderExpenses(); renderHome();
@@ -1301,50 +1235,111 @@
     const rj = e.target.closest('[data-reject-req]');
     if (rj) {
       const id = Number(rj.dataset.rejectReq);
-      const r = state.expenseRequests.find(function(x){ return x.id === id; });
+      const r = state.expenseRequests.find(x => x.id === id);
       if (!r) return;
       if (!confirm('Отклонить заявку? Чек будет удалён с сервера.')) return;
-      await db.from('notifications').insert({
-        user_id: r.user_id,
-        type: 'expense_rejected',
-        message: 'Ваш расход «' + r.name + '» отклонён ✗'
-      });
-      if (r.receipt_path) await db.storage.from('expense-receipts').remove([r.receipt_path]).catch(function(){});
+      await db.from('notifications').insert({ user_id: r.user_id, type:'expense_rejected', message:'Ваш расход «' + r.name + '» отклонён ✗' });
+      if (r.receipt_path) await db.storage.from('expense-receipts').remove([r.receipt_path]).catch(()=>{});
       await db.from('expense_requests').delete().eq('id', id);
       await loadAll();
       renderRequests();
     }
   });
 
+  // ===== ОСПАРИВАНИЯ =====
+  function renderDisputes() {
+    const tbody = document.getElementById('disputes-tbody');
+    tbody.innerHTML = '';
+    const list = state.disputes.slice().sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Пока нет оспариваний</td></tr>'; return; }
+    list.forEach(d => {
+      const u = state.users.find(x => x.id === d.user_id);
+      let statusHtml = '';
+      if (d.status === 'pending') statusHtml = '<span class="badge-status pending">⏳ На проверке</span>';
+      if (d.status === 'approved') statusHtml = '<span class="badge-status approved">✅ Одобрено</span>';
+      if (d.status === 'rejected') statusHtml = '<span class="badge-status rejected">❌ Отклонено</span>';
+      const reasonText = d.reason === 'otp' ? 'Отпуск' : d.reason === 'kmd' ? 'Командировка' : 'Уже сдавал';
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + new Date(d.created_at).toLocaleString('ru-RU') + '</td>' +
+        '<td>' + (u ? escapeHtml(u.fio) : '—') + '</td>' +
+        '<td>' + MONTHS[d.month] + ' ' + d.year + '</td>' +
+        '<td>' + reasonText + '</td>' +
+        '<td>' + statusHtml + '</td>' +
+        '<td>' + (d.status === 'pending' ?
+          '<button class="btn-success-outline" data-approve-dis="' + d.id + '">Одобрить</button> ' +
+          '<button class="btn-danger-outline" data-reject-dis="' + d.id + '">Отклонить</button>' : '') + '</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('disputes-tbody').addEventListener('click', async function(e){
+    const ap = e.target.closest('[data-approve-dis]');
+    if (ap) {
+      const id = Number(ap.dataset.approveDis);
+      const d = state.disputes.find(x => x.id === id);
+      if (!d) return;
+      if (!confirm('Одобрить оспаривание?')) return;
+      // Ставим месяц в статус otp/kmd
+      if (d.reason === 'otp' || d.reason === 'kmd') {
+        await db.from('months').upsert(
+          { user_id: d.user_id, year: d.year, month: d.month, status: d.reason },
+          { onConflict:'user_id,year,month' }
+        );
+      }
+      await db.from('disputes').update({ status: 'approved' }).eq('id', id);
+      await db.from('notifications').insert({
+        user_id: d.user_id, type: 'dispute_approved',
+        message: 'Ваше оспаривание за ' + MONTHS[d.month] + ' одобрено ✓'
+      });
+      await loadAll();
+      renderDisputes(); renderHome(); renderUsers();
+      return;
+    }
+    const rj = e.target.closest('[data-reject-dis]');
+    if (rj) {
+      const id = Number(rj.dataset.rejectDis);
+      const d = state.disputes.find(x => x.id === id);
+      if (!d) return;
+      if (!confirm('Отклонить оспаривание?')) return;
+      await db.from('disputes').update({ status: 'rejected' }).eq('id', id);
+      await db.from('notifications').insert({
+        user_id: d.user_id, type: 'dispute_rejected',
+        message: 'Ваше оспаривание за ' + MONTHS[d.month] + ' отклонено ✗'
+      });
+      await loadAll();
+      renderDisputes();
+    }
+  });
+
+  // ===== ПРЕДЛОЖЕНИЯ =====
   function renderSuggestions() {
     const list = document.getElementById('suggestions-list');
-    const items = state.suggestions.slice().sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); });
+    const items = state.suggestions.slice().sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
     if (!items.length) { list.innerHTML = '<div class="card empty">Пока нет предложений</div>'; return; }
-    list.innerHTML = items.map(function(s){
-      const u = state.users.find(function(x){ return x.id === s.user_id; });
+    list.innerHTML = items.map(s => {
+      const u = state.users.find(x => x.id === s.user_id);
       return '<div class="suggestion-card">' +
         '<div class="suggestion-meta">' + (u ? escapeHtml(u.fio) : 'Аноним') + ' · ' + new Date(s.created_at).toLocaleString('ru-RU') + '</div>' +
-        '<div>' + escapeHtml(s.text) + '</div>' +
-        '</div>';
+        '<div>' + escapeHtml(s.text) + '</div></div>';
     }).join('');
   }
 
+  // ===== ИНФО =====
   function renderInfoArticles() {
     const box = document.getElementById('info-list');
     if (!state.info.length) {
       box.innerHTML = '<div class="card empty">Пока нет статей. Нажмите «+ Добавить статью».</div>';
       return;
     }
-    box.innerHTML = state.info.map(function(a){
-      return '<div class="info-article">' +
+    box.innerHTML = state.info.map(a =>
+      '<div class="info-article">' +
         '<h4>' + escapeHtml(a.title) + '</h4>' +
         '<p>' + escapeHtml(a.content) + '</p>' +
         '<div style="margin-top:10px;display:flex;gap:8px;">' +
         '<button class="btn-icon" data-edit-info="' + a.id + '">Ред.</button>' +
         '<button class="btn-danger-outline" data-del-info="' + a.id + '">Удалить</button>' +
-        '</div>' +
-        '</div>';
-    }).join('');
+        '</div></div>'
+    ).join('');
   }
 
   document.getElementById('btn-add-info').addEventListener('click', function(){
@@ -1359,7 +1354,7 @@
     const ed = e.target.closest('[data-edit-info]');
     if (ed) {
       const id = Number(ed.dataset.editInfo);
-      const a = state.info.find(function(x){ return x.id === id; });
+      const a = state.info.find(x => x.id === id);
       editingInfoId = id;
       document.getElementById('info-modal-title').textContent = 'Редактирование статьи';
       document.getElementById('info-title-input').value = a.title;
@@ -1381,56 +1376,51 @@
     const content = document.getElementById('info-content-input').value.trim();
     if (!title || !content) { alert('Заполните заголовок и текст'); return; }
     if (editingInfoId) {
-      await db.from('info_articles').update({ title: title, content: content }).eq('id', editingInfoId);
+      await db.from('info_articles').update({ title, content }).eq('id', editingInfoId);
     } else {
-      await db.from('info_articles').insert({ title: title, content: content });
+      await db.from('info_articles').insert({ title, content });
     }
     await loadAll();
     renderInfoArticles();
     closeModal(document.getElementById('btn-save-info'));
   });
 
+  // ===== ИСТОРИЯ =====
   function buildHistory() {
     const items = [];
-    const year = getSaratovNow().year;
-    state.users.forEach(function(u){
-      u.paid.forEach(function(s, i){
-        if (s === 'paid') {
-          items.push({
-            type: 'income',
-            date: year + '-' + String(i+1).padStart(2,'0') + '-15',
-            description: u.fio + ' — взнос за ' + MONTHS[i],
-            amount: state.monthlyFee,
-            monthIndex: i,
-            userId: u.id
-          });
-        }
+    const y = getViewYear();
+    state.users.forEach(u => {
+      u.paid.forEach((s, i) => {
+        if (s === 'paid') items.push({
+          type:'income', date: y + '-' + String(i+1).padStart(2,'0') + '-15',
+          description: u.fio + ' — взнос за ' + MONTHS[i],
+          amount: state.monthlyFee, monthIndex: i, userId: u.id
+        });
       });
     });
-    state.expenses.forEach(function(e){
+    state.expenses.forEach(e => {
       const d = e.date || '';
+      if (new Date(d).getFullYear() !== y) return;
       const mi = d ? new Date(d).getMonth() : null;
       items.push({
-        type: 'expense', date: d,
+        type:'expense', date: d,
         description: e.name + ' ×' + e.qty,
         amount: -((Number(e.qty)||0)*(Number(e.price)||0)),
         monthIndex: mi, userId: null
       });
     });
-    return items.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    return items.sort((a,b) => (b.date||'').localeCompare(a.date||''));
   }
 
   function renderHistory() {
     const selM = document.getElementById('hist-filter-month');
     if (selM.options.length === 1) {
-      MONTHS.forEach(function(m,i){
-        const o = document.createElement('option'); o.value = i; o.textContent = m; selM.appendChild(o);
-      });
+      MONTHS.forEach((m,i) => { const o = document.createElement('option'); o.value = i; o.textContent = m; selM.appendChild(o); });
     }
     const selU = document.getElementById('hist-filter-user');
     const curVal = selU.value;
     selU.innerHTML = '<option value="all">Все</option>';
-    state.users.slice().sort(function(a,b){ return a.fio.localeCompare(b.fio,'ru'); }).forEach(function(u){
+    state.users.slice().sort((a,b)=>a.fio.localeCompare(b.fio,'ru')).forEach(u => {
       const o = document.createElement('option'); o.value = u.id; o.textContent = u.fio; selU.appendChild(o);
     });
     selU.value = curVal || 'all';
@@ -1440,30 +1430,30 @@
     const fU = selU.value;
 
     let items = buildHistory();
-    if (fT !== 'all') items = items.filter(function(x){ return x.type === fT; });
-    if (fM !== 'all') items = items.filter(function(x){ return String(x.monthIndex) === fM; });
-    if (fU !== 'all') items = items.filter(function(x){ return String(x.userId) === fU; });
+    if (fT !== 'all') items = items.filter(x => x.type === fT);
+    if (fM !== 'all') items = items.filter(x => String(x.monthIndex) === fM);
+    if (fU !== 'all') items = items.filter(x => String(x.userId) === fU);
 
     const tbody = document.getElementById('history-tbody');
     tbody.innerHTML = '';
     if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty">Записей нет</td></tr>'; return; }
-    items.forEach(function(it){
+    items.forEach(it => {
       const typeLabel = it.type === 'income' ? 'Пополнение' : 'Расход';
       const color = it.type === 'income' ? 'var(--green)' : 'var(--red)';
       const sign = it.amount >= 0 ? '+' : '−';
       const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td>' + (it.date || '—') + '</td>' +
+      tr.innerHTML = '<td>' + (it.date || '—') + '</td>' +
         '<td><span style="color:' + color + ';font-weight:600;">' + typeLabel + '</span></td>' +
         '<td>' + escapeHtml(it.description) + '</td>' +
         '<td style="font-weight:600;color:' + color + ';">' + sign + Math.abs(it.amount).toLocaleString('ru-RU') + ' ₽</td>';
       tbody.appendChild(tr);
     });
   }
-  ['hist-filter-type','hist-filter-month','hist-filter-user'].forEach(function(id){
+  ['hist-filter-type','hist-filter-month','hist-filter-user'].forEach(id => {
     document.getElementById(id).addEventListener('change', renderHistory);
   });
 
+  // ===== НАСТРОЙКИ =====
   document.getElementById('btn-save-fee').addEventListener('click', async function(){
     const val = Number(document.getElementById('input-fee').value);
     if (!val || val < 0) { alert('Введите корректную сумму'); return; }
@@ -1471,7 +1461,7 @@
     if (res.error) { alert('Ошибка: ' + res.error.message); return; }
     state.monthlyFee = val;
     document.getElementById('fee-saved-hint').textContent = 'Сохранено ✓';
-    setTimeout(function(){ document.getElementById('fee-saved-hint').textContent = ''; }, 2000);
+    setTimeout(() => document.getElementById('fee-saved-hint').textContent = '', 2000);
     renderHome(); renderUsers();
   });
 
@@ -1482,7 +1472,7 @@
       box.innerHTML = '<p style="font-size:12px;color:var(--muted);">Пока нет администраторов</p>';
       return;
     }
-    state.admins.forEach(function(a){
+    state.admins.forEach(a => {
       const row = document.createElement('div');
       row.className = 'admin-row';
       row.innerHTML = '<div><b>' + escapeHtml(a.fio) + '</b><br><small>Код: ' + escapeHtml(a.code) + '</small></div>' +
@@ -1505,13 +1495,13 @@
     const code = document.getElementById('new-admin-code').value.trim();
     const hint = document.getElementById('admin-hint');
     if (!fio || !code) { hint.textContent = 'Заполните ФИО и код'; hint.style.color = 'var(--red)'; return; }
-    const res = await db.from('admins').insert({ fio: fio, code: code });
+    const res = await db.from('admins').insert({ fio, code });
     if (res.error) { hint.textContent = 'Ошибка: ' + res.error.message; hint.style.color = 'var(--red)'; return; }
     document.getElementById('new-admin-fio').value = '';
     document.getElementById('new-admin-code').value = '';
     hint.textContent = 'Админ добавлен ✓';
     hint.style.color = 'var(--green)';
-    setTimeout(function(){ hint.textContent = ''; }, 2000);
+    setTimeout(() => hint.textContent = '', 2000);
     await loadAll();
     renderHome();
   });
@@ -1519,17 +1509,14 @@
   document.getElementById('btn-export').addEventListener('click', async function(){
     await loadAll();
     const dump = {
-      monthlyFee: state.monthlyFee,
-      users: state.users.map(function(u){ return { id: u.id, fio: u.fio, code: u.code, paid: u.paid, last_login: u.last_login }; }),
-      admins: state.admins,
-      expenses: state.expenses,
-      payments: state.payments,
-      expenseRequests: state.expenseRequests,
-      suggestions: state.suggestions,
-      info: state.info,
+      monthlyFee: state.monthlyFee, viewYear: state.currentYear,
+      users: state.users.map(u => ({ id:u.id, fio:u.fio, code:u.code, paid:u.paid, last_login:u.last_login })),
+      admins: state.admins, expenses: state.expenses, payments: state.payments,
+      expenseRequests: state.expenseRequests, disputes: state.disputes,
+      suggestions: state.suggestions, info: state.info,
       exportedAt: new Date().toISOString()
     };
-    const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(dump, null, 2)], { type:'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1537,34 +1524,29 @@
     a.click();
     URL.revokeObjectURL(url);
     document.getElementById('file-hint').textContent = 'Файл скачан ✓';
-    setTimeout(function(){ document.getElementById('file-hint').textContent = ''; }, 2000);
+    setTimeout(() => document.getElementById('file-hint').textContent = '', 2000);
   });
 
   document.getElementById('btn-clean-receipts').addEventListener('click', async function(){
     if (!confirm('Удалить фото чеков расходов старше 2 месяцев?')) return;
     const hint = document.getElementById('clean-hint');
     hint.textContent = 'Ищем…';
-    const threshold = new Date();
-    threshold.setMonth(threshold.getMonth() - 2);
+    const threshold = new Date(); threshold.setMonth(threshold.getMonth() - 2);
     const thresholdIso = threshold.toISOString().slice(0,10);
-    const old = state.expenses.filter(function(e){
-      return e.receipt_path && e.date && e.date < thresholdIso;
-    });
+    const old = state.expenses.filter(e => e.receipt_path && e.date && e.date < thresholdIso);
     if (!old.length) {
       hint.textContent = 'Нечего удалять';
-      setTimeout(function(){ hint.textContent = ''; }, 3000);
+      setTimeout(() => hint.textContent = '', 3000);
       return;
     }
-    const paths = old.map(function(e){ return e.receipt_path; });
+    const paths = old.map(e => e.receipt_path);
     const rm = await db.storage.from('expense-receipts').remove(paths);
     if (rm.error) { hint.textContent = 'Ошибка: ' + rm.error.message; return; }
-    for (let i = 0; i < old.length; i++) {
-      await db.from('expenses').update({ receipt_url: null, receipt_path: null }).eq('id', old[i].id);
-    }
+    for (const e of old) await db.from('expenses').update({ receipt_url:null, receipt_path:null }).eq('id', e.id);
     await loadAll();
     renderExpenses();
     hint.textContent = 'Удалено чеков: ' + old.length;
-    setTimeout(function(){ hint.textContent = ''; }, 4000);
+    setTimeout(() => hint.textContent = '', 4000);
   });
 
   document.getElementById('btn-danger-reset').addEventListener('click', function(){
@@ -1578,32 +1560,27 @@
     const errEl = document.getElementById('danger-error');
     errEl.textContent = '';
     if (pass !== DANGER_PASSWORD) { errEl.textContent = 'Неверный пароль'; return; }
-    const btn = this;
-    btn.disabled = true; btn.textContent = 'Удаляем…';
+    const btn = this; btn.disabled = true; btn.textContent = 'Удаляем…';
     try {
-      const paths1 = state.payments.filter(function(p){ return p.receipt_path; }).map(function(p){ return p.receipt_path; });
-      const paths2 = state.expenseRequests.filter(function(r){ return r.receipt_path; }).map(function(r){ return r.receipt_path; });
-      if (paths1.length) await db.storage.from('receipts').remove(paths1).catch(function(){});
-      if (paths2.length) await db.storage.from('expense-receipts').remove(paths2).catch(function(){});
+      const paths1 = state.payments.filter(p=>p.receipt_path).map(p=>p.receipt_path);
+      const paths2 = state.expenseRequests.filter(r=>r.receipt_path).map(r=>r.receipt_path);
+      if (paths1.length) await db.storage.from('receipts').remove(paths1).catch(()=>{});
+      if (paths2.length) await db.storage.from('expense-receipts').remove(paths2).catch(()=>{});
       await db.from('payments').delete().neq('id', 0);
       await db.from('expense_requests').delete().neq('id', 0);
       await db.from('suggestions').delete().neq('id', 0);
       await db.from('notifications').delete().neq('id', 0);
+      await db.from('disputes').delete().neq('id', 0);
       await loadAll();
-      renderHome(); renderReceipts(); renderRequests(); renderSuggestions();
+      renderHome(); renderReceipts(); renderRequests(); renderSuggestions(); renderDisputes();
       closeModal(document.getElementById('btn-danger-confirm'));
       alert('Готово! Всё удалено.');
-    } catch (err) {
-      console.error(err);
-      errEl.textContent = 'Ошибка: ' + (err.message || 'неизвестная');
-    } finally {
-      btn.disabled = false; btn.textContent = 'Удалить';
-    }
+    } catch (err) { console.error(err); errEl.textContent = 'Ошибка: ' + (err.message || 'неизвестная'); }
+    finally { btn.disabled = false; btn.textContent = 'Удалить'; }
   });
 
   document.getElementById('btn-refresh').addEventListener('click', async function(){
-    const btn = this;
-    btn.disabled = true; btn.textContent = '🔄 …';
+    const btn = this; btn.disabled = true; btn.textContent = '🔄 …';
     try {
       await loadAll();
       const active = document.querySelector('.nav-btn.active').dataset.screen;
@@ -1612,6 +1589,32 @@
     btn.disabled = false; btn.textContent = '🔄 Обновить';
   });
 
+  // ===== ПЕРЕКЛЮЧЕНИЕ ГОДА =====
+  (function initYearSelect(){
+    const sel = document.getElementById('year-select');
+    const curYear = new Date().getFullYear();
+    for (let y = curYear - 3; y <= curYear + 1; y++) {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y;
+      sel.appendChild(o);
+    }
+    // Восстанавливаем сохранённый год
+    let saved = null;
+    try { saved = localStorage.getItem('gocash_view_year'); } catch(e){}
+    if (saved && Number(saved)) state.currentYear = Number(saved);
+    else state.currentYear = curYear;
+    sel.value = String(state.currentYear);
+    document.getElementById('wallet-year-label').textContent = state.currentYear;
+
+    sel.addEventListener('change', async function(){
+      state.currentYear = Number(this.value);
+      try { localStorage.setItem('gocash_view_year', state.currentYear); } catch(e){}
+      document.getElementById('wallet-year-label').textContent = state.currentYear;
+      await loadAll();
+      showScreen(location.hash.replace('#','') || 'home');
+    });
+  })();
+
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -1619,7 +1622,7 @@
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('../service-worker.js').catch(function(){});
+    navigator.serviceWorker.register('../service-worker.js').catch(()=>{});
   }
 
   (async function(){
@@ -1628,7 +1631,7 @@
       await loadAll();
       renderHome();
     } catch (err) {
-      console.error('Ошибка загрузки данных:', err);
+      console.error('Ошибка загрузки:', err);
       document.getElementById('home-list').innerHTML =
         '<div class="card empty" style="color:#ef4444;">Ошибка загрузки: ' + (err.message || err) + '</div>';
     }
