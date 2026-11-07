@@ -6,11 +6,11 @@
 <meta name="theme-color" content="#0f172a">
 <title>GoCash Admin</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
-<link rel="manifest" href="../manifest.json">
+<link rel="manifest" href="../manifest-admin.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#f4f6fa;--card:#fff;--text:#1a2233;--muted:#6b7690;--border:#e6eaf0;--primary:#3b82f6;--primary-dark:#2563eb;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--shadow-sm:0 1px 2px rgba(20,30,50,.05);--shadow-md:0 4px 12px rgba(20,30,50,.08);--radius:12px}
+  :root{--bg:#f4f6fa;--card:#fff;--text:#1a2233;--muted:#6b7690;--border:#e6eaf0;--primary:#3b82f6;--primary-dark:#2563eb;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--purple:#6366f1;--cyan:#0891b2;--shadow-sm:0 1px 2px rgba(20,30,50,.05);--shadow-md:0 4px 12px rgba(20,30,50,.08);--radius:12px}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;font-size:14px;-webkit-font-smoothing:antialiased}
   .app-header{background:#0f172a;color:#fff;padding:14px 28px;display:flex;align-items:center;gap:16px}
@@ -31,10 +31,13 @@
   .screen{display:none}.screen.active{display:block}
   .screen h2{font-size:20px;font-weight:600;margin-bottom:16px}
   .btn{padding:9px 16px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-sm{padding:6px 12px;font-size:12px}
   .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
   .btn-secondary{background:#eef1f6;color:var(--text)}.btn-secondary:hover{background:#e2e6ee}
   .btn-success{background:var(--green);color:#fff}.btn-success:hover{filter:brightness(.95)}
   .btn-danger{background:var(--red);color:#fff}
+  .btn-purple{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff}.btn-purple:hover{filter:brightness(.95)}
+  .btn-cyan{background:linear-gradient(135deg,#0891b2,#0e7490);color:#fff}.btn-cyan:hover{filter:brightness(.95)}
   .btn-icon{background:#eef1f6;color:var(--text);padding:6px 10px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit}
   .btn-icon:hover{background:#e2e6ee}
   .btn-danger-outline{background:#fee2e2;color:#991b1b;padding:6px 10px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit}
@@ -125,6 +128,8 @@
   .info-article h4{font-size:14px;font-weight:600;margin-bottom:6px}
   .info-article p{font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.5}
   .mobile-nav{display:none}
+  .report-checkbox{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:4px 0}
+  .report-checkbox input{width:auto;margin:0}
   @media (max-width:768px){
     body{padding-bottom:68px}
     .app-main,.app-header,.app-nav{padding-left:16px;padding-right:16px}
@@ -229,6 +234,8 @@
     <div class="expenses-toolbar">
       <button class="btn btn-primary" id="btn-add-user">+ Добавить пользователя</button>
       <button class="btn btn-success" id="btn-import-excel">📊 Загрузить Excel</button>
+      <button class="btn btn-purple" id="btn-export-report">📈 Экспорт по месяцам</button>
+      <button class="btn btn-cyan" id="btn-load-template">📥 Загрузить шаблон</button>
       <button class="btn btn-secondary" id="btn-edit-mode">Редактировать</button>
     </div>
     <table>
@@ -501,6 +508,61 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-export-report">
+  <div class="modal" style="max-width:560px;">
+    <h3>📈 Экспорт по месяцам</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+      Год берётся из селектора в шапке — сейчас <b id="exp-report-year">2026</b>.
+    </p>
+
+    <label>Месяцы</label>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <button class="btn btn-secondary btn-sm" id="exp-select-all-months">Выбрать все</button>
+      <button class="btn btn-secondary btn-sm" id="exp-clear-months">Снять все</button>
+    </div>
+    <div id="exp-months-checkboxes" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px;background:#fafbfd;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;"></div>
+
+    <label>Статусы</label>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <button class="btn btn-secondary btn-sm" id="exp-select-all-statuses">Выбрать все</button>
+    </div>
+    <div id="exp-statuses-checkboxes" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px;background:#fafbfd;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;"></div>
+
+    <p class="settings-hint" id="exp-report-hint" style="margin-bottom:14px;"></p>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close-modal>Отмена</button>
+      <button class="btn btn-purple" id="btn-export-report-confirm">📥 Скачать Excel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-load-template">
+  <div class="modal" style="max-width:500px;">
+    <h3>📥 Загрузить в шаблон</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">
+      Загрузи свой Excel-шаблон. На <b>Листе 2</b> в <b>столбец A</b> (начиная со 2-й строки) будут вписаны ФИО должников за выбранный месяц.<br>
+      Формулы в столбце B и оформление <b>сохранятся</b>.
+    </p>
+
+    <label>Месяц</label>
+    <select id="load-template-month" style="width:100%;margin-bottom:14px;"></select>
+
+    <label>Файл шаблона (.xlsx)</label>
+    <div class="file-input-wrap" style="margin-bottom:14px;">
+      <input type="file" id="load-template-file" accept=".xlsx,.xls">
+      <div class="file-input-label" id="load-template-file-label">📎 Выберите .xlsx-шаблон</div>
+    </div>
+
+    <p class="settings-hint" id="load-template-hint" style="margin-bottom:14px;"></p>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close-modal>Отмена</button>
+      <button class="btn btn-cyan" id="btn-load-template-confirm" disabled>📥 Сформировать</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-add-info">
   <div class="modal">
     <h3 id="info-modal-title">Новая статья</h3>
@@ -559,6 +621,31 @@
   </div>
 </div>
 
+<!-- Плашка установки PWA -->
+<div id="pwa-install-banner" style="display:none;position:fixed;bottom:20px;right:20px;z-index:9999;background:#fff;border-radius:14px;padding:16px 20px;box-shadow:0 12px 40px rgba(15,23,42,.2);max-width:340px;border:1px solid #e6eaf0;animation:pwaSlideUp .3s ease;">
+  <style>
+    @keyframes pwaSlideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @media (max-width: 500px) {
+      #pwa-install-banner { left: 12px !important; right: 12px !important; max-width: none !important; bottom: 80px !important; }
+    }
+  </style>
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="flex-shrink:0;width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#22c55e,#16a34a);display:flex;align-items:center;justify-content:center;font-size:24px;">💰</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:14px;font-weight:600;color:#1a2233;margin-bottom:4px;">Установить GoCash Admin</div>
+      <div style="font-size:12px;color:#6b7690;line-height:1.4;margin-bottom:10px;">Быстрый доступ с рабочего стола, работает даже офлайн.</div>
+      <div style="display:flex;gap:8px;">
+        <button id="pwa-install-btn" style="flex:1;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Установить</button>
+        <button id="pwa-dismiss-btn" style="background:transparent;color:#6b7690;border:1px solid #e6eaf0;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;">Позже</button>
+      </div>
+    </div>
+    <button id="pwa-close-btn" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:20px;line-height:1;padding:0 4px;margin-top:-4px;">×</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -583,6 +670,9 @@
   let pendingReceiptFile = null, importRows = [], editingInfoId = null, editingAnnId = null;
   let debtSortDir = 'none';
   let userSearchQuery = '';
+  let reportMonths = [];
+  let reportStatuses = [];
+  let loadedTemplateFile = null;
 
   function getSaratovNow() {
     const fmt = new Intl.DateTimeFormat('ru-RU', {timeZone:'Europe/Saratov',year:'numeric',month:'numeric',day:'numeric'});
@@ -1350,7 +1440,6 @@
     }).join('');
   }
 
-  // ===== ОБЪЯВЛЕНИЯ =====
   function renderAnnouncements() {
     const box = document.getElementById('announcements-list');
     if (!state.announcements.length) {
@@ -1418,6 +1507,119 @@
     renderAnnouncements();
     closeModal(document.getElementById('btn-save-announcement'));
   });
+
+  // ===== ЗАГРУЗКА В ШАБЛОН =====
+  function initLoadTemplateMonth() {
+    const sel = document.getElementById('load-template-month');
+    sel.innerHTML = '';
+    const now = getSaratovNow();
+    MONTHS.forEach((m, i) => {
+      const o = document.createElement('option');
+      o.value = i;
+      o.textContent = m;
+      if (i === now.month) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  document.getElementById('btn-load-template').addEventListener('click', function(){
+    loadedTemplateFile = null;
+    initLoadTemplateMonth();
+    document.getElementById('load-template-file').value = '';
+    document.getElementById('load-template-file-label').textContent = '📎 Выберите .xlsx-шаблон';
+    document.getElementById('load-template-hint').textContent = '';
+    document.getElementById('btn-load-template-confirm').disabled = true;
+    openModal('modal-load-template');
+  });
+
+  document.getElementById('load-template-file').addEventListener('change', function(e){
+    const f = e.target.files[0];
+    if (!f) { loadedTemplateFile = null; return; }
+    if (!/\.xlsx?$/i.test(f.name)) {
+      document.getElementById('load-template-hint').textContent = 'Нужен файл .xlsx или .xls';
+      document.getElementById('load-template-hint').style.color = 'var(--red)';
+      return;
+    }
+    loadedTemplateFile = f;
+    document.getElementById('load-template-file-label').textContent = '📎 ' + f.name;
+    document.getElementById('load-template-hint').textContent = '';
+    document.getElementById('btn-load-template-confirm').disabled = false;
+  });
+
+  document.getElementById('btn-load-template-confirm').addEventListener('click', async function(){
+    if (!loadedTemplateFile) { alert('Выберите файл-шаблон'); return; }
+    const monthIdx = Number(document.getElementById('load-template-month').value);
+    const btn = this;
+    btn.disabled = true; btn.textContent = 'Формируем…';
+    try {
+      await fillTemplate(loadedTemplateFile, monthIdx);
+      closeModal(btn);
+    } catch (err) {
+      console.error(err);
+      document.getElementById('load-template-hint').textContent = 'Ошибка: ' + (err.message || err);
+      document.getElementById('load-template-hint').style.color = 'var(--red)';
+    } finally {
+      btn.disabled = false; btn.textContent = '📥 Сформировать';
+    }
+  });
+
+  async function fillTemplate(file, monthIdx) {
+    const year = getViewYear();
+    const now = getSaratovNow();
+
+    const debtors = state.users.filter(u => {
+      const st = u.paid[monthIdx];
+      if (st === 'paid' || st === 'otp' || st === 'kmd') return false;
+      if (year < now.year) return true;
+      if (year === now.year) {
+        if (monthIdx < now.month) return true;
+        if (monthIdx === now.month && isCurrentMonthBillable()) return true;
+      }
+      return st === 'unpaid';
+    }).sort((a,b) => a.fio.localeCompare(b.fio,'ru'));
+
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellStyles: true });
+
+    if (wb.SheetNames.length < 2) {
+      throw new Error('В шаблоне меньше 2 листов. Нужен второй лист.');
+    }
+    const sheetName = wb.SheetNames[1];
+    const ws = wb.Sheets[sheetName];
+    if (!ws) throw new Error('Лист 2 не найден');
+
+    const START_ROW = 2;
+
+    for (let r = START_ROW; r <= 500; r++) {
+      const cellA = 'A' + r;
+      if (ws[cellA]) {
+        delete ws[cellA].v;
+        delete ws[cellA].w;
+        delete ws[cellA].t;
+      }
+    }
+
+    debtors.forEach((u, idx) => {
+      const row = START_ROW + idx;
+      const cellA = 'A' + row;
+      ws[cellA] = ws[cellA] || {};
+      ws[cellA].v = u.fio;
+      ws[cellA].t = 's';
+    });
+
+    const lastDebtorRow = START_ROW + Math.max(debtors.length - 1, 0);
+    if (ws['!ref']) {
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      if (lastDebtorRow > range.e.r) range.e.r = lastDebtorRow;
+      if (range.e.c < 1) range.e.c = 1;
+      ws['!ref'] = XLSX.utils.encode_range(range);
+    } else {
+      ws['!ref'] = 'A1:B' + Math.max(lastDebtorRow, 1);
+    }
+
+    const fileName = 'GoCash_' + year + '_' + MONTHS_SHORT[monthIdx] + '_готово.xlsx';
+    XLSX.writeFile(wb, fileName, { bookType: 'xlsx', cellStyles: true });
+  }
 
   // ===== ПЕЧАТЬ КВИТАНЦИИ =====
   document.getElementById('btn-print-receipt-from-info').addEventListener('click', function(){
@@ -1799,6 +2001,190 @@
     });
   })();
 
+  // ===== ЭКСПОРТ ПО МЕСЯЦАМ =====
+  const STATUS_OPTIONS = [
+    { key: 'paid', label: 'Сдал', color: '#22c55e' },
+    { key: 'unpaid', label: 'Не сдал', color: '#ef4444' },
+    { key: 'otp', label: 'Отп', color: '#f59e0b' },
+    { key: 'kmd', label: 'Кмд', color: '#3b82f6' },
+    { key: null, label: 'Не отмечено', color: '#94a3b8' }
+  ];
+
+  function renderReportCheckboxes() {
+    document.getElementById('exp-report-year').textContent = getViewYear();
+    const now = getSaratovNow();
+
+    const monthBox = document.getElementById('exp-months-checkboxes');
+    monthBox.innerHTML = '';
+    MONTHS.forEach((m, i) => {
+      let isPast = false;
+      if (getViewYear() < now.year) isPast = true;
+      else if (getViewYear() === now.year && i <= now.month) isPast = true;
+
+      const label = document.createElement('label');
+      label.className = 'report-checkbox';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = i;
+      cb.checked = isPast;
+      cb.dataset.month = i;
+      cb.className = 'report-month-cb';
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(MONTHS_SHORT[i]));
+      monthBox.appendChild(label);
+    });
+
+    const statusBox = document.getElementById('exp-statuses-checkboxes');
+    statusBox.innerHTML = '';
+    STATUS_OPTIONS.forEach(opt => {
+      const label = document.createElement('label');
+      label.className = 'report-checkbox';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = true;
+      cb.dataset.status = opt.key === null ? '__null__' : opt.key;
+      cb.className = 'report-status-cb';
+      label.appendChild(cb);
+      const dot = document.createElement('span');
+      dot.style.cssText = 'display:inline-block;width:10px;height:10px;border-radius:3px;background:' + opt.color + ';';
+      label.appendChild(dot);
+      label.appendChild(document.createTextNode(opt.label));
+      statusBox.appendChild(label);
+    });
+  }
+
+  document.getElementById('btn-export-report').addEventListener('click', function(){
+    renderReportCheckboxes();
+    document.getElementById('exp-report-hint').textContent = '';
+    openModal('modal-export-report');
+  });
+
+  document.getElementById('exp-select-all-months').addEventListener('click', function(){
+    document.querySelectorAll('.report-month-cb').forEach(cb => cb.checked = true);
+  });
+  document.getElementById('exp-clear-months').addEventListener('click', function(){
+    document.querySelectorAll('.report-month-cb').forEach(cb => cb.checked = false);
+  });
+  document.getElementById('exp-select-all-statuses').addEventListener('click', function(){
+    document.querySelectorAll('.report-status-cb').forEach(cb => cb.checked = true);
+  });
+
+  document.getElementById('btn-export-report-confirm').addEventListener('click', function(){
+    reportMonths = [];
+    reportStatuses = [];
+    document.querySelectorAll('.report-month-cb').forEach(cb => { if (cb.checked) reportMonths.push(Number(cb.dataset.month)); });
+    document.querySelectorAll('.report-status-cb').forEach(cb => { if (cb.checked) reportStatuses.push(cb.dataset.status === '__null__' ? null : cb.dataset.status); });
+
+    const hint = document.getElementById('exp-report-hint');
+    if (!reportMonths.length) {
+      hint.textContent = 'Выберите хотя бы один месяц';
+      hint.style.color = 'var(--red)';
+      return;
+    }
+    if (!reportStatuses.length) {
+      hint.textContent = 'Выберите хотя бы один статус';
+      hint.style.color = 'var(--red)';
+      return;
+    }
+
+    doExportReport();
+  });
+
+  function doExportReport() {
+    const year = getViewYear();
+    const fee = state.monthlyFee;
+    const now = getSaratovNow();
+
+    function expStatus(user, mIdx) {
+      const s = user.paid[mIdx];
+      if (s) return s;
+      if (year < now.year) return 'unpaid';
+      if (year === now.year) {
+        if (mIdx < now.month) return 'unpaid';
+        if (mIdx === now.month && isCurrentMonthBillable()) return 'unpaid';
+      }
+      return null;
+    }
+
+    const sortedUsers = state.users.slice().sort((a,b) => a.fio.localeCompare(b.fio,'ru'));
+
+    const header1 = ['ФИО', 'Код'];
+    reportMonths.forEach(m => header1.push(MONTHS[m]));
+    header1.push('Задолженность (₽)');
+    const rows1 = [header1];
+
+    sortedUsers.forEach(u => {
+      const row = [u.fio, u.code];
+      let debt = 0;
+      reportMonths.forEach(m => {
+        const st = expStatus(u, m);
+        const lbl = st === 'paid' ? 'Сдал' : st === 'unpaid' ? 'Не сдал' : st === 'otp' ? 'Отп' : st === 'kmd' ? 'Кмд' : 'Не отмечено';
+        const isSelected = reportStatuses.indexOf(st) >= 0;
+        row.push(isSelected ? lbl : '');
+        if ((st === 'unpaid' || st === null) && isSelected) debt += fee;
+      });
+      row.push(debt > 0 ? debt : 0);
+      rows1.push(row);
+    });
+
+    const rows2 = [['Месяц','Сдал','Не сдал','Отп','Кмд','Не отмечено','Долг (₽)']];
+    reportMonths.forEach(m => {
+      let paid=0, unpaid=0, otp=0, kmd=0, none=0;
+      state.users.forEach(u => {
+        const st = expStatus(u, m);
+        if (st==='paid') paid++;
+        else if (st==='unpaid') unpaid++;
+        else if (st==='otp') otp++;
+        else if (st==='kmd') kmd++;
+        else none++;
+      });
+      rows2.push([MONTHS[m], paid, unpaid, otp, kmd, none, (unpaid + none) * fee]);
+    });
+
+    const header3 = ['ФИО', 'Код'];
+    reportMonths.forEach(m => header3.push(MONTHS[m]));
+    header3.push('Долг (₽)');
+    const rows3 = [header3];
+
+    sortedUsers.forEach(u => {
+      const row = [u.fio, u.code];
+      let debt = 0, hasDebt = false;
+      reportMonths.forEach(m => {
+        const st = expStatus(u, m);
+        const isDebt = st === 'unpaid' || st === null;
+        const isSelected = reportStatuses.indexOf(st) >= 0;
+        if (isDebt && isSelected) { row.push('Долг'); debt += fee; hasDebt = true; }
+        else if (isDebt) row.push('');
+        else row.push(isSelected ? (st === 'paid' ? 'Сдал' : st === 'otp' ? 'Отп' : st === 'kmd' ? 'Кмд' : '') : '');
+      });
+      row.push(debt);
+      if (hasDebt) rows3.push(row);
+    });
+
+    const wb = XLSX.utils.book_new();
+
+    const ws1 = XLSX.utils.aoa_to_sheet(rows1);
+    ws1['!cols'] = [{wch:30},{wch:12},...reportMonths.map(()=>({wch:12})),{wch:22}];
+    XLSX.utils.book_append_sheet(wb, ws1, 'По пользователям');
+
+    const ws2 = XLSX.utils.aoa_to_sheet(rows2);
+    ws2['!cols'] = [{wch:14},{wch:8},{wch:8},{wch:8},{wch:8},{wch:14},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Сводка по месяцам');
+
+    if (rows3.length > 1) {
+      const ws3 = XLSX.utils.aoa_to_sheet(rows3);
+      ws3['!cols'] = [{wch:30},{wch:12},...reportMonths.map(()=>({wch:12})),{wch:22}];
+      XLSX.utils.book_append_sheet(wb, ws3, 'Должники');
+    }
+
+    const monthLabel = reportMonths.length === 12 ? 'все'
+      : reportMonths.length <= 3 ? reportMonths.map(m => MONTHS_SHORT[m]).join('-')
+      : reportMonths.length + 'мес';
+    XLSX.writeFile(wb, 'GoCash_отчёт_' + year + '_' + monthLabel + '.xlsx');
+
+    closeModal(document.getElementById('btn-export-report-confirm'));
+  }
+
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -1806,8 +2192,67 @@
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('../service-worker.js').catch(()=>{});
+    navigator.serviceWorker.register('../sw-admin.js').catch(()=>{});
   }
+
+  // ===== PWA INSTALL PROMPT =====
+  let deferredPrompt = null;
+  const installBanner = document.getElementById('pwa-install-banner');
+  const installBtn = document.getElementById('pwa-install-btn');
+  const dismissBtn = document.getElementById('pwa-dismiss-btn');
+  const closeBtn = document.getElementById('pwa-close-btn');
+
+  function isPWAInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true ||
+           document.referrer.includes('android-app://');
+  }
+
+  function isBannerDismissed() {
+    try { return localStorage.getItem('pwa_banner_dismissed') === '1'; } catch(e) { return false; }
+  }
+
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!isPWAInstalled() && !isBannerDismissed()) {
+      installBanner.style.display = 'block';
+    }
+  });
+
+  if (isPWAInstalled()) {
+    installBanner.style.display = 'none';
+  }
+
+  installBtn.addEventListener('click', async function() {
+    if (!deferredPrompt) {
+      alert('Установка недоступна.\n\nВозможные причины:\n• Браузер не поддерживает (нужен Chrome, Edge или Opera)\n• PWA уже установлено\n• Вы открываете файл не через HTTPS');
+      return;
+    }
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    if (choice.outcome === 'accepted') {
+      console.log('✅ Пользователь установил приложение');
+      installBanner.style.display = 'none';
+      try { localStorage.setItem('pwa_banner_dismissed', '1'); } catch(e){}
+    } else {
+      console.log('❌ Пользователь отклонил установку');
+    }
+    deferredPrompt = null;
+  });
+
+  function dismissBanner() {
+    installBanner.style.display = 'none';
+    try { localStorage.setItem('pwa_banner_dismissed', '1'); } catch(e){}
+  }
+  dismissBtn.addEventListener('click', dismissBanner);
+  closeBtn.addEventListener('click', dismissBanner);
+
+  window.addEventListener('appinstalled', function() {
+    console.log('🎉 GoCash Admin установлен!');
+    installBanner.style.display = 'none';
+    try { localStorage.setItem('pwa_banner_dismissed', '1'); } catch(e){}
+  });
 
   (async function(){
     showScreen(location.hash.replace('#','') || 'home');
